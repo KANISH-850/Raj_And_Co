@@ -9,8 +9,22 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, supabase } = useAuth();
   const navigate = useNavigate();
+
+  const lastUser = localStorage.getItem("lastUser");
+  const [showWelcome, setShowWelcome] = useState(!!lastUser);
+
+  const continueLogin = () => {
+    setEmail(lastUser);
+    setShowWelcome(false);
+  };
+
+  const signInWithGoogle = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+    });
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -46,6 +60,25 @@ const Login = () => {
           <h1 className="text-3xl font-bold text-white">Raj & Co</h1>
           <p className="text-secondary-400 mt-2">Welcome back. Enter your credentials.</p>
         </div>
+
+        {showWelcome && lastUser && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 p-6 bg-gradient-to-br from-primary-600/20 to-blue-600/20 border border-primary-500/30 rounded-2xl flex items-center justify-between gap-4"
+          >
+            <div className="flex flex-col gap-1 overflow-hidden">
+                <span className="text-primary-400 font-bold text-xs uppercase tracking-widest">Previous Login</span>
+                <span className="text-white font-medium truncate">{lastUser}</span>
+            </div>
+            <button 
+                onClick={continueLogin}
+                className="px-5 py-2.5 bg-primary-600 hover:bg-primary-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-primary-600/20"
+            >
+                Continue
+            </button>
+          </motion.div>
+        )}
 
         {error && (
           <motion.div 
@@ -98,6 +131,29 @@ const Login = () => {
             )}
           </motion.button>
         </form>
+
+        <div className="mt-8 flex items-center gap-4">
+            <div className="h-px flex-1 bg-secondary-700/50"></div>
+            <span className="text-secondary-500 text-xs font-bold uppercase tracking-widest">Or login with</span>
+            <div className="h-px flex-1 bg-secondary-700/50"></div>
+        </div>
+
+        <motion.button 
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={signInWithGoogle}
+          className="w-full mt-6 bg-secondary-800/80 hover:bg-secondary-800 border border-secondary-700/50 text-white py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 relative group overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-600/5 to-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <svg className="w-6 h-6" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+            <path fill="none" d="M0 0h48v48H0z" />
+          </svg>
+          Google
+        </motion.button>
 
         <div className="mt-8 text-center">
             <p className="text-secondary-400">

@@ -1,9 +1,14 @@
-const jwt = require('jsonwebtoken');
+const { createClient } = require('@supabase/supabase-js');
 const { error } = require('../utils/response');
-const prisma = require('../config/db');
+
+// 1. Initialize Supabase Admin for verification (uses ANON key or SERVICE key for more power)
+const supabase = createClient(
+  process.env.SUPABASE_URL || '',
+  process.env.SUPABASE_ANON_KEY || ''
+);
 
 /**
- * JWT Authentication Middleware
+ * JWT Authentication Middleware using Supabase Auth
  */
 const authMiddleware = async (req, res, next) => {
   try {
@@ -13,21 +18,25 @@ const authMiddleware = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
+    
+    // 2. Ask Supabase to verify this token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: { id: true, email: true, name: true },
-    });
-
-    if (!user) {
-      return error(res, 'User no longer exists', 401);
+    if (authError || !user) {
+      return error(res, 'Invalid or expired session', 401);
     }
 
-    req.user = user;
+    // 3. Attach Supabase user info to the request
+    req.user = {
+      id: user.id,
+      email: user.email,
+      ...user.user_metadata
+    };
+    
     next();
   } catch (err) {
-    return error(res, 'Invalid or expired token', 401);
+    console.error("Auth Middleware Error:", err);
+    return error(res, 'Internal Authentication Error', 401);
   }
 };
 

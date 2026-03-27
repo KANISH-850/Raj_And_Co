@@ -6,7 +6,7 @@ const { success } = require('../../utils/response');
  */
 const list = async (req, res, next) => {
   try {
-    const data = await workersService.listWorkers(req.params.projectId);
+    const data = await workersService.listWorkers(req.params.projectId, req.user.id);
     return success(res, data, 'Workers retrieved');
   } catch (err) {
     next(err);
@@ -18,7 +18,7 @@ const list = async (req, res, next) => {
  */
 const create = async (req, res, next) => {
   try {
-    const data = await workersService.addWorker(req.params.projectId, req.body);
+    const data = await workersService.addWorker(req.params.projectId, req.user.id, req.body);
     return success(res, data, 'Worker added', 201);
   } catch (err) {
     next(err);
@@ -30,7 +30,7 @@ const create = async (req, res, next) => {
  */
 const update = async (req, res, next) => {
   try {
-    const data = await workersService.updateWorker(req.params.id, req.body);
+    const data = await workersService.updateWorker(req.params.id, req.user.id, req.body);
     return success(res, data, 'Worker updated');
   } catch (err) {
     next(err);
@@ -42,7 +42,7 @@ const update = async (req, res, next) => {
  */
 const remove = async (req, res, next) => {
   try {
-    await workersService.removeWorker(req.params.id);
+    await workersService.removeWorker(req.params.id, req.user.id);
     return success(res, null, 'Worker removed from project');
   } catch (err) {
     next(err);

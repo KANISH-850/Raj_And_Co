@@ -3,9 +3,9 @@ const prisma = require('../../config/db');
 /**
  * List workers in a project
  */
-const listWorkers = async (projectId) => {
+const listWorkers = async (projectId, userId) => {
   return await prisma.worker.findMany({
-    where: { projectId },
+    where: { projectId, userId },
     orderBy: { createdAt: 'desc' },
   });
 };
@@ -13,10 +13,11 @@ const listWorkers = async (projectId) => {
 /**
  * Add worker to project
  */
-const addWorker = async (projectId, payload) => {
+const addWorker = async (projectId, userId, payload) => {
   return await prisma.worker.create({
     data: {
       projectId,
+      userId,
       name: payload.name,
       role: payload.role,
       dailyWage: payload.dailyWage,
@@ -28,9 +29,9 @@ const addWorker = async (projectId, payload) => {
 /**
  * Update worker
  */
-const updateWorker = async (id, payload) => {
+const updateWorker = async (id, userId, payload) => {
   return await prisma.worker.update({
-    where: { id },
+    where: { id, userId },
     data: {
       ...payload,
       joinedDate: payload.joinedDate ? new Date(payload.joinedDate) : undefined,
@@ -41,8 +42,8 @@ const updateWorker = async (id, payload) => {
 /**
  * Remove worker
  */
-const removeWorker = async (id) => {
-  return await prisma.worker.delete({ where: { id } });
+const removeWorker = async (id, userId) => {
+  return await prisma.worker.delete({ where: { id, userId } });
 };
 
 module.exports = { listWorkers, addWorker, updateWorker, removeWorker };

@@ -9,7 +9,7 @@ const list = async (req, res, next) => {
   try {
     const { page, limit, skip } = getPagination(req.query);
     const { total, data } = await projectsService.list({ 
-      page, limit, skip, status: req.query.status 
+      page, limit, skip, status: req.query.status, userId: req.user.id 
     });
     return paginated(res, data, page, limit, total, 'Projects retrieved');
   } catch (err) {
@@ -22,7 +22,7 @@ const list = async (req, res, next) => {
  */
 const create = async (req, res, next) => {
   try {
-    const data = await projectsService.create(req.body);
+    const data = await projectsService.create(req.body, req.user.id);
     return success(res, data, 'Project created', 201);
   } catch (err) {
     next(err);
@@ -34,7 +34,7 @@ const create = async (req, res, next) => {
  */
 const getById = async (req, res, next) => {
   try {
-    const data = await projectsService.getById(req.params.id);
+    const data = await projectsService.getById(req.params.id, req.user.id);
     if (!data) return error(res, 'Project not found', 404);
     return success(res, data, 'Project retrieved');
   } catch (err) {
@@ -47,7 +47,7 @@ const getById = async (req, res, next) => {
  */
 const update = async (req, res, next) => {
   try {
-    const data = await projectsService.update(req.params.id, req.body);
+    const data = await projectsService.update(req.params.id, req.user.id, req.body);
     return success(res, data, 'Project updated');
   } catch (err) {
     next(err);
@@ -59,7 +59,7 @@ const update = async (req, res, next) => {
  */
 const remove = async (req, res, next) => {
   try {
-    await projectsService.remove(req.params.id);
+    await projectsService.remove(req.params.id, req.user.id);
     return success(res, null, 'Project deleted');
   } catch (err) {
     next(err);
@@ -71,7 +71,7 @@ const remove = async (req, res, next) => {
  */
 const getSummary = async (req, res, next) => {
   try {
-    const stats = await projectsService.getSummary(req.params.id);
+    const stats = await projectsService.getSummary(req.params.id, req.user.id);
     return success(res, stats, 'Project summary summary generated');
   } catch (err) {
     next(err);

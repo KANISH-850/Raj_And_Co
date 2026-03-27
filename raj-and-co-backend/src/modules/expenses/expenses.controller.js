@@ -7,7 +7,7 @@ const { success } = require('../../utils/response');
 const list = async (req, res, next) => {
   try {
     const { category, dateFrom, dateTo } = req.query;
-    const data = await expensesService.listExpenses(req.params.projectId, { category, dateFrom, dateTo });
+    const data = await expensesService.listExpenses(req.params.projectId, req.user.id, { category, dateFrom, dateTo });
     return success(res, data, 'Expenses retrieved');
   } catch (err) {
     next(err);
@@ -19,7 +19,7 @@ const list = async (req, res, next) => {
  */
 const create = async (req, res, next) => {
   try {
-    const data = await expensesService.addExpense(req.params.projectId, req.body);
+    const data = await expensesService.addExpense(req.params.projectId, req.user.id, req.body);
     return success(res, data, 'Expense added', 201);
   } catch (err) {
     next(err);
@@ -31,7 +31,7 @@ const create = async (req, res, next) => {
  */
 const update = async (req, res, next) => {
   try {
-    const data = await expensesService.updateExpense(req.params.id, req.body);
+    const data = await expensesService.updateExpense(req.params.id, req.user.id, req.body);
     return success(res, data, 'Expense updated');
   } catch (err) {
     next(err);
@@ -43,7 +43,7 @@ const update = async (req, res, next) => {
  */
 const remove = async (req, res, next) => {
   try {
-    await expensesService.removeExpense(req.params.id);
+    await expensesService.removeExpense(req.params.id, req.user.id);
     return success(res, null, 'Expense deleted');
   } catch (err) {
     next(err);
@@ -55,7 +55,7 @@ const remove = async (req, res, next) => {
  */
 const getGlobalSummary = async (req, res, next) => {
   try {
-    const summary = await expensesService.getSummary();
+    const summary = await expensesService.getSummary(req.user.id);
     return success(res, summary, 'Expense global summary generated');
   } catch (err) {
     next(err);

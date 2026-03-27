@@ -1,27 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-
-// --- Firebase Mock (For Simulation Mode) ---
-const mockAuth = {
-  currentUser: {
-    uid: 'mock-uid-123',
-    displayName: 'Raj Contractor (Simulated)',
-    email: 'admin@rajandco.com',
-    photoURL: null
-  },
-  onAuthStateChanged: (cb) => {
-     cb({
-        uid: 'mock-uid-123',
-        displayName: 'Raj Contractor (Simulated)',
-        email: 'admin@rajandco.com',
-        photoURL: null
-     });
-     return () => {};
-  },
-  signInWithEmailAndPassword: () => Promise.resolve(),
-  signOut: () => Promise.resolve(),
-  createUserWithEmailAndPassword: () => Promise.resolve({ user: { uid: 'mock-uid-123' } }),
-  updateProfile: () => Promise.resolve()
-};
+import { supabase } from '../utils/supabaseClient';
 
 const AuthContext = createContext();
 
@@ -31,71 +9,62 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if we have real Firebase env vars
-  const isSimulation = !import.meta.env.VITE_FIREBASE_API_KEY || import.meta.env.VITE_SIMULATION === 'true';
-
   useEffect(() => {
-    if (isSimulation) {
-        console.warn("⚠️ [RAJ & CO] Running in SIMULATION MODE. Firebase is disconnected.");
-        setCurrentUser(mockAuth.currentUser);
+    // 0. Safety Catch
+    if (!supabase) {
+        console.warn("⚠️ [RAJ & CO BUG]: Supabase URL or Anon Key is missing in .env!");
         setLoading(false);
         return;
     }
 
-    // Dynamic import to avoid crash if Firebase is totally failed
-    const initFirebase = async () => {
-        try {
-            const { initializeApp } = await import('firebase/app');
-            const { getAuth, onAuthStateChanged } = await import('firebase/auth');
-
-            const firebaseConfig = {
-                apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-                authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-                projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-                storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-                messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-                appId: import.meta.env.VITE_FIREBASE_APP_ID
-            };
-
-            const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
-
-            const unsubscribe = onAuthStateChanged(auth, (user) => {
-                setCurrentUser(user);
-                setLoading(false);
-            });
-            return unsubscribe;
-        } catch (error) {
-            console.error("Firebase Init Error:", error);
-            // Fallback to simulation
-            setCurrentUser(mockAuth.currentUser);
-            setLoading(false);
-        }
+    // 1. Initial user check
+    const checkUser = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) console.error("Supabase Session Error:", error);
+      
+      setCurrentUser(session?.user ?? null);
+      setLoading(false);
     };
-    initFirebase();
+
+    checkUser();
+
+    // 2. Auth changes (Login/Logout) listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCurrentUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (currentUser?.email) {
+      localStorage.setItem("lastUser", currentUser.email);
+    }
+  }, [currentUser]);
+
   const login = async (email, password) => {
-    if (isSimulation) return Promise.resolve();
-    const { getAuth, signInWithEmailAndPassword } = await import('firebase/auth');
-    return signInWithEmailAndPassword(getAuth(), email, password);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return data;
   };
 
   const logout = async () => {
-    if (isSimulation) {
-        setCurrentUser(null);
-        return;
-    }
-    const { getAuth, signOut } = await import('firebase/auth');
-    return signOut(getAuth());
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    setCurrentUser(null);
   };
 
   const register = async (email, password, name) => {
-    if (isSimulation) return Promise.resolve();
-    const { getAuth, createUserWithEmailAndPassword, updateProfile } = await import('firebase/auth');
-    const userCredential = await createUserWithEmailAndPassword(getAuth(), email, password);
-    await updateProfile(userCredential.user, { displayName: name });
-    return userCredential.user;
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { display_name: name }
+      }
+    });
+    if (error) throw error;
+    return data;
   };
 
   const value = {
@@ -104,12 +73,38 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     register,
-    isSimulation
+    supabase // Export raw client just in case
   };
+
+  if (!supabase) {
+    return (
+        <div className="h-screen w-full flex items-center justify-center bg-secondary-900 px-4">
+            <div className="max-w-md bg-secondary-800 p-8 rounded-2xl border border-secondary-700 shadow-2xl">
+                <div className="w-12 h-12 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center mb-6">
+                    ⚠️
+                </div>
+                <h2 className="text-white text-xl font-bold mb-2">Configuration Missing</h2>
+                <p className="text-secondary-400 text-sm leading-relaxed mb-6">
+                    It looks like you haven't added your **Supabase URL** and **Anon Key** to your **client/.env** file yet.
+                </p>
+                <div className="bg-secondary-900 p-4 rounded-lg font-mono text-[11px] text-primary-400 mb-6 border border-secondary-700">
+                    VITE_SUPABASE_URL=...<br/>
+                    VITE_SUPABASE_ANON_KEY=...
+                </div>
+                <button 
+                  onClick={() => window.location.reload()}
+                  className="w-full py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-lg font-bold transition-all shadow-lg shadow-primary-600/20"
+                >
+                  Check Settings & Retry
+                </button>
+            </div>
+        </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={value}>
-      {loading ? (
+       {loading ? (
         <div className="h-screen w-full flex items-center justify-center bg-secondary-900 overflow-hidden">
             <div className="flex flex-col items-center gap-6">
                 <div className="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center font-bold text-white text-3xl shadow-xl shadow-primary-600/20 animate-pulse">
@@ -119,7 +114,7 @@ export const AuthProvider = ({ children }) => {
                     <div className="w-48 h-1.5 bg-secondary-800 rounded-full overflow-hidden">
                         <div className="h-full bg-primary-500 animate-[loading_1.5s_infinite]"></div>
                     </div>
-                    <p className="text-secondary-500 text-[10px] font-black uppercase tracking-[0.2em]">Initializing Raj & Co System</p>
+                    <p className="text-secondary-500 text-[10px] font-black uppercase tracking-[0.2em]">Synchronizing Raj & Co Session</p>
                 </div>
             </div>
             <style>

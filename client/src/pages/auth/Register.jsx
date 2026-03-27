@@ -9,6 +9,7 @@ const Register = () => {
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
     const [error, setError] = useState('');
+    const [isSuccess, setIsSuccess] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const { register } = useAuth();
     const navigate = useNavigate();
@@ -19,7 +20,7 @@ const Register = () => {
         setError('');
         try {
             await register(email, password, name);
-            navigate('/');
+            setIsSuccess(true);
         } catch (err) {
             setError(err.message || 'Error occurred while registering');
             console.error(err);
@@ -47,7 +48,31 @@ const Register = () => {
                     <p className="text-secondary-400 mt-2">Start managing your construction projects effectively.</p>
                 </div>
 
-                {error && (
+                {isSuccess ? (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-center py-8"
+                    >
+                        <div className="w-16 h-16 bg-green-500/10 text-green-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                            <Mail size={32} className="animate-bounce" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-white mb-2">Check your email</h2>
+                        <p className="text-secondary-400 text-sm leading-relaxed mb-8">
+                            We've sent a verification link to <span className="text-white font-medium">{email}</span>. 
+                            Please click the link to confirm your account and log in.
+                        </p>
+                        <Link 
+                           to="/login"
+                           className="inline-flex items-center gap-2 text-primary-400 hover:text-primary-300 font-bold transition-colors group"
+                        >
+                           <LogIn size={18} className="group-hover:-translate-y-0.5 transition-transform" />
+                           Return to Login
+                        </Link>
+                    </motion.div>
+                ) : (
+                    <>
+                        {error && (
                     <motion.div 
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -121,6 +146,8 @@ const Register = () => {
                         </Link>
                     </p>
                 </div>
+                </>
+                )}
             </motion.div>
         </div>
     );

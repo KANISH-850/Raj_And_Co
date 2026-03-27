@@ -3,8 +3,8 @@ const prisma = require('../../config/db');
 /**
  * List expenses for a project
  */
-const listExpenses = async (projectId, { dateFrom, dateTo, category }) => {
-  const where = { projectId };
+const listExpenses = async (projectId, userId, { dateFrom, dateTo, category }) => {
+  const where = { projectId, userId };
   if (category) where.category = category;
   if (dateFrom || dateTo) {
     where.date = {};
@@ -20,10 +20,11 @@ const listExpenses = async (projectId, { dateFrom, dateTo, category }) => {
 /**
  * Add expense to project
  */
-const addExpense = async (projectId, payload) => {
+const addExpense = async (projectId, userId, payload) => {
   return await prisma.expense.create({
     data: {
       projectId,
+      userId,
       date: new Date(payload.date),
       category: payload.category,
       description: payload.description,
@@ -35,9 +36,9 @@ const addExpense = async (projectId, payload) => {
 /**
  * Update expense
  */
-const updateExpense = async (id, payload) => {
+const updateExpense = async (id, userId, payload) => {
   return await prisma.expense.update({
-    where: { id },
+    where: { id, userId },
     data: {
       ...payload,
       date: payload.date ? new Date(payload.date) : undefined,
@@ -48,16 +49,17 @@ const updateExpense = async (id, payload) => {
 /**
  * Delete expense
  */
-const removeExpense = async (id) => {
-  return await prisma.expense.delete({ where: { id } });
+const removeExpense = async (id, userId) => {
+  return await prisma.expense.delete({ where: { id, userId } });
 };
 
 /**
  * Get expense summary across all projects
  */
-const getSummary = async () => {
+const getSummary = async (userId) => {
   const grouped = await prisma.expense.groupBy({
     by: ['projectId', 'category'],
+    where: { userId },
     _sum: { amount: true },
   });
   

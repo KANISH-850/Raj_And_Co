@@ -3,20 +3,25 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
   id        String   @id @default(uuid())
   name      String
   email     String   @unique
-  password  String
+  password  String?  // Optional if solely using Supabase Auth
   createdAt DateTime @default(now())
+
+  projects     Project[]
+  contractors  Contractor[]
 }
 
 model Project {
   id         String    @id @default(uuid())
+  userId     String    // Supabase User ID
   name       String
   location   String?
   tenderRef  String?
@@ -26,6 +31,7 @@ model Project {
   status     String    @default("active")
   createdAt  DateTime  @default(now())
 
+  user        User      @relation(fields: [userId], references: [id])
   workers     Worker[]
   expenses    Expense[]
   tenders     Tender[]
@@ -35,6 +41,7 @@ model Project {
 model Worker {
   id         String   @id @default(uuid())
   projectId  String
+  userId     String    // Supabase User ID
   name       String
   role       String?
   dailyWage  Float?
@@ -48,6 +55,7 @@ model Worker {
 model Expense {
   id          String   @id @default(uuid())
   projectId   String
+  userId      String    // Supabase User ID
   date        DateTime
   category    String   // material, labour, equipment, misc
   description String?
@@ -60,6 +68,7 @@ model Expense {
 model Tender {
   id            String   @id @default(uuid())
   projectId     String?
+  userId        String    // Supabase User ID
   title         String
   tenderValue   Float?
   status        String   @default("submitted") // submitted, approved, rejected
@@ -73,6 +82,7 @@ model Salary {
   id        String   @id @default(uuid())
   projectId String
   workerId  String
+  userId    String    // Supabase User ID
   month     String   // e.g. "2024-03"
   amount    Float
   paidOn    DateTime?
@@ -85,10 +95,13 @@ model Salary {
 
 model Contractor {
   id         String   @id @default(uuid())
+  userId     String    // Supabase User ID
   name       String
   specialty  String   // civil, electrical, plumbing, etc.
   rating     Float    @default(0)
   contact    String?
   available  Boolean  @default(true)
   createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id])
 }

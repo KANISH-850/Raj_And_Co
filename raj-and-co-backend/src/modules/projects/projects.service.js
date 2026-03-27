@@ -3,8 +3,9 @@ const prisma = require('../../config/db');
 /**
  * List all projects with pagination and status filter
  */
-const list = async ({ page, limit, skip, status }) => {
-  const where = status ? { status } : {};
+const list = async ({ page, limit, skip, status, userId }) => {
+  const where = { userId };
+  if (status) where.status = status;
   const [total, data] = await Promise.all([
     prisma.project.count({ where }),
     prisma.project.findMany({
@@ -20,9 +21,10 @@ const list = async ({ page, limit, skip, status }) => {
 /**
  * Create a new project
  */
-const create = async (payload) => {
+const create = async (payload, userId) => {
   return await prisma.project.create({
     data: {
+      userId,
       name: payload.name,
       location: payload.location,
       tenderRef: payload.tenderRef,
@@ -37,9 +39,9 @@ const create = async (payload) => {
 /**
  * Get project by ID
  */
-const getById = async (id) => {
+const getById = async (id, userId) => {
   return await prisma.project.findUnique({
-    where: { id },
+    where: { id, userId },
     include: {
       _count: {
         select: { workers: true, expenses: true, tenders: true, salaries: true },
@@ -51,9 +53,9 @@ const getById = async (id) => {
 /**
  * Update project
  */
-const update = async (id, payload) => {
+const update = async (id, userId, payload) => {
   return await prisma.project.update({
-    where: { id },
+    where: { id, userId },
     data: {
       ...payload,
       startDate: payload.startDate ? new Date(payload.startDate) : undefined,
@@ -65,29 +67,29 @@ const update = async (id, payload) => {
 /**
  * Delete project
  */
-const remove = async (id) => {
-  return await prisma.project.delete({ where: { id } });
+const remove = async (id, userId) => {
+  return await prisma.project.delete({ where: { id, userId } });
 };
 
 /**
  * Get project summary stats
  */
-const getSummary = async (id) => {
+const getSummary = async (id, userId) => {
   const [totalExpense, expensesByCategory, workerCount, unpaidSalaryCount] = await Promise.all([
     prisma.expense.aggregate({
-      where: { projectId: id },
+      where: { projectId: id, userId },
       _sum: { amount: true },
     }),
     prisma.expense.groupBy({
       by: ['category'],
-      where: { projectId: id },
+      where: { projectId: id, userId },
       _sum: { amount: true },
     }),
     prisma.worker.count({
-      where: { projectId: id },
+      where: { projectId: id, userId },
     }),
     prisma.salary.count({
-      where: { projectId: id, isPaid: false },
+      where: { projectId: id, userId, isPaid: false },
     }),
   ]);
 
