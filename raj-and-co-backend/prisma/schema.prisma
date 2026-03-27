@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+model Project {
+  id         String    @id @default(uuid())
+  name       String
+  location   String?
+  tenderRef  String?
+  type       String?   // civil, electrical, plumbing, etc.
+  startDate  DateTime?
+  endDate    DateTime?
+  status     String    @default("active")
+  createdAt  DateTime  @default(now())
+
+  workers     Worker[]
+  expenses    Expense[]
+  tenders     Tender[]
+  salaries    Salary[]
+}
+
+model Worker {
+  id         String   @id @default(uuid())
+  projectId  String
+  name       String
+  role       String?
+  dailyWage  Float?
+  joinedDate DateTime?
+  createdAt  DateTime @default(now())
+
+  project    Project  @relation(fields: [projectId], references: [id])
+  salaries   Salary[]
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  projectId   String
+  date        DateTime
+  category    String   // material, labour, equipment, misc
+  description String?
+  amount      Float
+  createdAt   DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id])
+}
+
+model Tender {
+  id            String   @id @default(uuid())
+  projectId     String?
+  title         String
+  tenderValue   Float?
+  status        String   @default("submitted") // submitted, approved, rejected
+  submittedDate DateTime?
+  createdAt     DateTime @default(now())
+
+  project       Project? @relation(fields: [projectId], references: [id])
+}
+
+model Salary {
+  id        String   @id @default(uuid())
+  projectId String
+  workerId  String
+  month     String   // e.g. "2024-03"
+  amount    Float
+  paidOn    DateTime?
+  isPaid    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  project   Project  @relation(fields: [projectId], references: [id])
+  worker    Worker   @relation(fields: [workerId], references: [id])
+}
+
+model Contractor {
+  id         String   @id @default(uuid())
+  name       String
+  specialty  String   // civil, electrical, plumbing, etc.
+  rating     Float    @default(0)
+  contact    String?
+  available  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+}
