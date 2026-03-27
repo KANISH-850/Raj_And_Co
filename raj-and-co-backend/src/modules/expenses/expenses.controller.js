@@ -2,6 +2,19 @@ const expensesService = require('./expenses.service');
 const { success } = require('../../utils/response');
 
 /**
+ * List Controller (Global)
+ */
+const listAll = async (req, res, next) => {
+  try {
+    const { category, dateFrom, dateTo } = req.query;
+    const data = await expensesService.listAllExpenses(req.user.id, { category, dateFrom, dateTo });
+    return success(res, data, 'All expenses retrieved');
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * List Controller
  */
 const list = async (req, res, next) => {
@@ -62,4 +75,4 @@ const getGlobalSummary = async (req, res, next) => {
   }
 };
 
-module.exports = { list, create, update, remove, getGlobalSummary };
+module.exports = { list, listAll, create, update, remove, getGlobalSummary };

@@ -1,6 +1,24 @@
 const prisma = require('../../config/db');
 
 /**
+ * List all expenses for a user (across all projects)
+ */
+const listAllExpenses = async (userId, { dateFrom, dateTo, category }) => {
+  const where = { userId };
+  if (category) where.category = category;
+  if (dateFrom || dateTo) {
+    where.date = {};
+    if (dateFrom) where.date.gte = new Date(dateFrom);
+    if (dateTo) where.date.lte = new Date(dateTo);
+  }
+  return await prisma.expense.findMany({
+    where,
+    orderBy: { date: 'desc' },
+    include: { project: { select: { name: true } } },
+  });
+};
+
+/**
  * List expenses for a project
  */
 const listExpenses = async (projectId, userId, { dateFrom, dateTo, category }) => {
@@ -76,4 +94,4 @@ const getSummary = async (userId) => {
   return summary;
 };
 
-module.exports = { listExpenses, addExpense, updateExpense, removeExpense, getSummary };
+module.exports = { listExpenses, listAllExpenses, addExpense, updateExpense, removeExpense, getSummary };

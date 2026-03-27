@@ -1,16 +1,49 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { CreditCard, PlusCircle, Search, Download, Filter, TrendingUp, TrendingDown, IndianRupee, FileBarChart } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CreditCard, PlusCircle, Search, Download, Filter, TrendingUp, TrendingDown, IndianRupee, FileBarChart, Loader2, AlertCircle, ArrowUpRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import apiClient from '../services/apiClient';
+import useApi from '../hooks/useApi';
 
 const Accounts = () => {
+    const navigate = useNavigate();
     const [search, setSearch] = useState('');
+    const [filter, setFilter] = useState('All');
 
-    const transactions = [
-        { id: 1, date: '2025-03-22', project: 'NH-44 Highway', type: 'debit', category: 'Material', amount: 450000, desc: 'Central Supply Cement' },
-        { id: 2, date: '2025-03-24', project: 'Central Mall Site', type: 'credit', category: 'Funds', amount: 1500000, desc: 'Project Advance' },
-        { id: 3, date: '2025-03-24', project: 'Royal Enclave', type: 'debit', category: 'Labour', amount: 120000, desc: 'Weekly Salary Payout' },
-        { id: 4, date: '2025-03-25', project: 'City Hospital', type: 'debit', category: 'Equipment', amount: 85000, desc: 'Crane Rental' },
-    ];
+    const { execute: fetchTransactions, data: apiResponse, loading, error } = useApi(
+        () => apiClient.get('/expenses')
+    );
+
+    const { execute: fetchSummary, data: summaryResponse } = useApi(
+        () => apiClient.get('/expenses/summary')
+    );
+
+    useEffect(() => {
+        fetchTransactions();
+        fetchSummary();
+    }, []);
+
+    const transactions = apiResponse?.data || [];
+    
+    // Aggregation for stats
+    const stats = useMemo(() => {
+        const data = summaryResponse?.data || {};
+        const totalDebit = Object.values(data).reduce((acc, curr) => acc + (curr.total || 0), 0);
+        // We'll simulate credit as a percentage for now or if backend has it, use it
+        const totalCredit = totalDebit * 1.5; // Mock credit logic for now
+        return {
+            debit: totalDebit,
+            credit: totalCredit,
+            balance: totalCredit - totalDebit
+        };
+    }, [summaryResponse]);
+
+    const filteredTransactions = transactions.filter(tx => {
+        const matchesSearch = tx.description?.toLowerCase().includes(search.toLowerCase()) || 
+                             tx.project?.name?.toLowerCase().includes(search.toLowerCase());
+        const matchesFilter = filter === 'All' || (filter === 'Debit' && tx.amount > 0);
+        return matchesSearch && matchesFilter;
+    });
 
     return (
         <div className="space-y-8 pb-20">
@@ -42,7 +75,7 @@ const Accounts = () => {
                     </div>
                     <p className="text-4xl font-black text-secondary-900 tracking-tighter flex items-center gap-2">
                         <IndianRupee size={28} className="text-secondary-300" />
-                        24,50,000
+                        {stats.credit.toLocaleString()}
                     </p>
                  </div>
                  <div className="glass p-8 rounded-[2.5rem] border border-secondary-200 flex flex-col gap-4 group">
@@ -54,7 +87,7 @@ const Accounts = () => {
                     </div>
                     <p className="text-4xl font-black text-secondary-900 tracking-tighter flex items-center gap-2">
                         <IndianRupee size={28} className="text-secondary-300" />
-                        12,45,000
+                        {stats.debit.toLocaleString()}
                     </p>
                  </div>
                  <div className="bg-secondary-900 p-8 rounded-[2.5rem] flex flex-col gap-4 group relative overflow-hidden">
@@ -67,7 +100,7 @@ const Accounts = () => {
                     </div>
                     <p className="text-4xl font-black text-white tracking-tighter flex items-center gap-2 relative z-10">
                         <IndianRupee size={28} className="text-white/30" />
-                        12,05,000
+                        {stats.balance.toLocaleString()}
                     </p>
                  </div>
             </div>
@@ -86,9 +119,15 @@ const Accounts = () => {
                         />
                     </div>
                     <div className="flex gap-2">
-                        <button className="px-6 py-3 bg-white border border-secondary-200 rounded-2xl text-secondary-600 font-bold hover:bg-secondary-50 transition-all shadow-sm">All</button>
-                        <button className="px-6 py-3 bg-white border border-secondary-200 rounded-2xl text-emerald-600 font-bold hover:bg-emerald-50 transition-all shadow-sm">Credit</button>
-                        <button className="px-6 py-3 bg-white border border-secondary-200 rounded-2xl text-red-600 font-bold hover:bg-red-50 transition-all shadow-sm">Debit</button>
+                        {['All', 'Credit', 'Debit'].map(opt => (
+                            <button 
+                                key={opt}
+                                onClick={() => setFilter(opt)}
+                                className={`px-6 py-3 border rounded-2xl font-bold transition-all shadow-sm ${filter === opt ? 'bg-primary-600 text-white border-primary-600' : 'bg-white border-secondary-200 text-secondary-600 hover:bg-secondary-50'}`}
+                            >
+                                {opt}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
@@ -104,31 +143,59 @@ const Accounts = () => {
                                 <th className="table-header text-right">Status</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-secondary-100">
-                             {transactions.map((tx) => (
+                        <tbody className="divide-y divide-secondary-100 italic">
+                             {loading ? (
+                                 <tr>
+                                     <td colSpan="6" className="py-20 text-center">
+                                         <Loader2 className="w-10 h-10 text-primary-500 animate-spin mx-auto mb-4" />
+                                         <p className="text-secondary-400 font-bold uppercase tracking-widest text-xs">Accessing Financial Vault...</p>
+                                     </td>
+                                 </tr>
+                             ) : error ? (
+                                 <tr>
+                                     <td colSpan="6" className="py-20 text-center text-red-500 font-bold bg-red-50/50">
+                                         {error}
+                                     </td>
+                                 </tr>
+                             ) : filteredTransactions.length === 0 ? (
+                                <tr>
+                                    <td colSpan="6" className="py-32 text-center grayscale opacity-30">
+                                        <CreditCard size={48} className="mx-auto mb-4" />
+                                        <p className="text-xl font-bold">No matching records found in ledger</p>
+                                    </td>
+                                </tr>
+                             ) : filteredTransactions.map((tx) => (
                                 <tr key={tx.id} className="hover:bg-primary-50/30 transition-colors group">
-                                    <td className="table-cell font-medium text-secondary-600">{tx.date}</td>
+                                    <td className="table-cell font-bold text-secondary-600">{new Date(tx.date).toLocaleDateString()}</td>
                                     <td className="table-cell">
                                         <div className="flex flex-col">
-                                            <p className="font-bold text-secondary-900">{tx.desc}</p>
-                                            <p className="text-[10px] uppercase font-black text-secondary-400 tracking-widest">TID: #{tx.id}00${tx.id}</p>
+                                            <p className="font-bold text-secondary-900">{tx.description || 'Global Project Expense'}</p>
+                                            <p className="text-[10px] uppercase font-black text-secondary-400 tracking-widest">REF: EXP-{tx.id.toString().padStart(4, '0')}</p>
                                         </div>
                                     </td>
                                     <td className="table-cell">
-                                        <span className="px-3 py-1 bg-secondary-100 text-secondary-700 rounded-full text-[10px] font-black uppercase tracking-widest">
-                                            {tx.category}
+                                        <span className="px-3 py-1 bg-secondary-100 text-secondary-700 rounded-full text-[10px] font-black uppercase tracking-widest ring-1 ring-secondary-200">
+                                            {tx.category || 'misc'}
                                         </span>
                                     </td>
-                                    <td className="table-cell font-bold text-secondary-900">{tx.project}</td>
-                                    <td className={`table-cell font-black text-lg tracking-tighter ${tx.type === 'debit' ? 'text-red-600' : 'text-emerald-600'}`}>
+                                    <td 
+                                        onClick={() => tx.projectId && navigate(`/projects/${tx.projectId}`)}
+                                        className="table-cell font-black text-secondary-900 group/link cursor-pointer hover:text-primary-600 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            {tx.project?.name || 'Central Office'}
+                                            <ArrowUpRight size={14} className="opacity-0 group-hover/link:opacity-100 transition-all -translate-y-1" />
+                                        </div>
+                                    </td>
+                                    <td className={`table-cell font-black text-lg tracking-tighter text-red-600`}>
                                         <div className="flex items-center gap-1 justify-end">
-                                            {tx.type === 'credit' ? '+' : '-'}
+                                            -
                                             <IndianRupee size={16} />
                                             {tx.amount.toLocaleString()}
                                         </div>
                                     </td>
                                     <td className="table-cell text-right">
-                                        <div className={`w-3 h-3 rounded-full ml-auto ${tx.type === 'debit' ? 'bg-red-500 shadow-lg shadow-red-500/20' : 'bg-emerald-500 shadow-lg shadow-emerald-500/20'}`}></div>
+                                        <div className={`w-3 h-3 rounded-full ml-auto bg-red-500 shadow-lg shadow-red-500/20 animate-pulse`}></div>
                                     </td>
                                 </tr>
                              ))}

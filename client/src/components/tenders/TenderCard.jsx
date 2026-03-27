@@ -1,11 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { FileText, IndianRupee, Calendar, MapPin, Building2, MoreHorizontal } from 'lucide-react';
+import { FileText, IndianRupee, Calendar, MapPin, Building2, MoreHorizontal, Loader2 } from 'lucide-react';
 
 const TenderCard = ({ tender, delay }) => {
 
     const getStatusStyle = (status) => {
-        switch (status) {
+        switch (status?.toLowerCase()) {
             case 'won': return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 ring-emerald-500/10';
             case 'lost': return 'bg-red-500/10 text-red-600 border-red-500/20 ring-red-500/10';
             case 'submitted': return 'bg-blue-500/10 text-blue-600 border-blue-500/20 ring-blue-500/10';
@@ -16,11 +16,19 @@ const TenderCard = ({ tender, delay }) => {
     return (
         <motion.div
             initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            animate={{ opacity: tender.isOptimistic ? 0.6 : 1, x: 0 }}
             transition={{ delay, duration: 0.5 }}
-            whileHover={{ y: -5, scale: 1.01 }}
-            className="glass p-8 rounded-[2.5rem] shadow-xl hover:shadow-2xl hover:bg-white/90 transition-all cursor-pointer relative group flex flex-col gap-6"
+            whileHover={tender.isOptimistic ? {} : { y: -5, scale: 1.01 }}
+            className={`glass p-8 rounded-[2.5rem] shadow-xl hover:shadow-2xl hover:bg-white/90 transition-all cursor-pointer relative group flex flex-col gap-6 ${tender.isOptimistic ? 'animate-pulse' : ''}`}
         >
+            {tender.isOptimistic && (
+                <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] rounded-[2.5rem] z-20 flex items-center justify-center">
+                    <div className="bg-secondary-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                        <Loader2 size={12} className="animate-spin" />
+                        Syncing...
+                    </div>
+                </div>
+            )}
             <div className="absolute top-6 right-8 text-secondary-400 opacity-0 group-hover:opacity-100 transition-opacity">
                 <MoreHorizontal size={20} />
             </div>

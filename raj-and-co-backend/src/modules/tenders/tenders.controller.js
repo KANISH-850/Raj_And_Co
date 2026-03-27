@@ -6,7 +6,7 @@ const { success } = require('../../utils/response');
  */
 const list = async (req, res, next) => {
   try {
-    const data = await tendersService.list({ status: req.query.status });
+    const data = await tendersService.list(req.user.id, { status: req.query.status });
     return success(res, data, 'Tenders retrieved');
   } catch (err) {
     next(err);
@@ -18,7 +18,7 @@ const list = async (req, res, next) => {
  */
 const create = async (req, res, next) => {
   try {
-    const data = await tendersService.create(req.body);
+    const data = await tendersService.create(req.user.id, req.body);
     return success(res, data, 'Tender created', 201);
   } catch (err) {
     next(err);
@@ -30,7 +30,7 @@ const create = async (req, res, next) => {
  */
 const update = async (req, res, next) => {
   try {
-    const data = await tendersService.update(req.params.id, req.body);
+    const data = await tendersService.update(req.params.id, req.user.id, req.body);
     return success(res, data, 'Tender updated');
   } catch (err) {
     next(err);
@@ -42,7 +42,7 @@ const update = async (req, res, next) => {
  */
 const remove = async (req, res, next) => {
   try {
-    await tendersService.remove(req.params.id);
+    await tendersService.remove(req.params.id, req.user.id);
     return success(res, null, 'Tender deleted');
   } catch (err) {
     next(err);

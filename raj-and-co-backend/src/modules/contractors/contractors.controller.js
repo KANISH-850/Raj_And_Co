@@ -7,7 +7,7 @@ const { success } = require('../../utils/response');
 const list = async (req, res, next) => {
   try {
     const { specialty, available } = req.query;
-    const data = await contractorsService.list({ specialty, available });
+    const data = await contractorsService.list(req.user.id, { specialty, available });
     return success(res, data, 'Contractors retrieved');
   } catch (err) {
     next(err);
@@ -19,7 +19,7 @@ const list = async (req, res, next) => {
  */
 const create = async (req, res, next) => {
   try {
-    const data = await contractorsService.create(req.body);
+    const data = await contractorsService.create(req.user.id, req.body);
     return success(res, data, 'Contractor created', 201);
   } catch (err) {
     next(err);
@@ -31,7 +31,7 @@ const create = async (req, res, next) => {
  */
 const update = async (req, res, next) => {
   try {
-    const data = await contractorsService.update(req.params.id, req.body);
+    const data = await contractorsService.update(req.params.id, req.user.id, req.body);
     return success(res, data, 'Contractor updated');
   } catch (err) {
     next(err);
@@ -43,7 +43,7 @@ const update = async (req, res, next) => {
  */
 const remove = async (req, res, next) => {
   try {
-    await contractorsService.remove(req.params.id);
+    await contractorsService.remove(req.params.id, req.user.id);
     return success(res, null, 'Contractor deleted');
   } catch (err) {
     next(err);

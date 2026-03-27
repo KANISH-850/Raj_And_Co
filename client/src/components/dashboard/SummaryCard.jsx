@@ -1,7 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
-const SummaryCard = ({ label, value, icon, color, trend, delay }) => {
+const SummaryCard = ({ label, value, icon, color, trend, delay, link }) => {
+    const navigate = useNavigate();
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -9,6 +12,7 @@ const SummaryCard = ({ label, value, icon, color, trend, delay }) => {
             transition={{ delay, duration: 0.5, ease: "easeOut" }}
             whileHover={{ y: -5, scale: 1.02 }}
             className="glass rounded-3xl p-6 shadow-xl relative overflow-hidden group cursor-pointer"
+            onClick={() => link && navigate(link)}
         >
             <div className={`absolute top-0 right-0 w-24 h-24 ${color} opacity-[0.05] rounded-bl-[100px] pointer-events-none group-hover:scale-150 transition-transform duration-500`}></div>
             

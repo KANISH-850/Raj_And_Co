@@ -4,3 +4,4 @@ dist
 .pnp
 .pnp.js
 *.log
+.env.example

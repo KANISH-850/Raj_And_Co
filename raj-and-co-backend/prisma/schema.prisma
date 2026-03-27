@@ -9,99 +9,92 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String?  // Optional if solely using Supabase Auth
-  createdAt DateTime @default(now())
-
-  projects     Project[]
-  contractors  Contractor[]
+  id          String       @id @default(uuid())
+  name        String
+  email       String       @unique
+  password    String?
+  createdAt   DateTime     @default(now())
+  contractors Contractor[]
+  projects    Project[]
 }
 
 model Project {
-  id         String    @id @default(uuid())
-  userId     String    // Supabase User ID
-  name       String
-  location   String?
-  tenderRef  String?
-  type       String?   // civil, electrical, plumbing, etc.
-  startDate  DateTime?
-  endDate    DateTime?
-  status     String    @default("active")
-  createdAt  DateTime  @default(now())
-
-  user        User      @relation(fields: [userId], references: [id])
-  workers     Worker[]
-  expenses    Expense[]
-  tenders     Tender[]
-  salaries    Salary[]
+  id        String    @id @default(uuid())
+  userId    String
+  name      String
+  location  String?
+  tenderRef String?
+  type      String?
+  startDate DateTime?
+  endDate   DateTime?
+  status    String    @default("active")
+  createdAt DateTime  @default(now())
+  expenses  Expense[]
+  user      User      @relation(fields: [userId], references: [id])
+  salaries  Salary[]
+  tenders   Tender[]
+  workers   Worker[]
 }
 
 model Worker {
-  id         String   @id @default(uuid())
+  id         String    @id @default(uuid())
   projectId  String
-  userId     String    // Supabase User ID
+  userId     String
   name       String
   role       String?
   dailyWage  Float?
   joinedDate DateTime?
-  createdAt  DateTime @default(now())
-
-  project    Project  @relation(fields: [projectId], references: [id])
+  createdAt  DateTime  @default(now())
   salaries   Salary[]
+  project    Project   @relation(fields: [projectId], references: [id])
 }
 
 model Expense {
   id          String   @id @default(uuid())
   projectId   String
-  userId      String    // Supabase User ID
+  userId      String
   date        DateTime
-  category    String   // material, labour, equipment, misc
+  category    String
   description String?
   amount      Float
   createdAt   DateTime @default(now())
-
   project     Project  @relation(fields: [projectId], references: [id])
 }
 
 model Tender {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   projectId     String?
-  userId        String    // Supabase User ID
+  userId        String
   title         String
   tenderValue   Float?
-  status        String   @default("submitted") // submitted, approved, rejected
+  status        String    @default("submitted")
   submittedDate DateTime?
-  createdAt     DateTime @default(now())
-
-  project       Project? @relation(fields: [projectId], references: [id])
+  createdAt     DateTime  @default(now())
+  project       Project?  @relation(fields: [projectId], references: [id])
 }
 
 model Salary {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   projectId String
   workerId  String
-  userId    String    // Supabase User ID
-  month     String   // e.g. "2024-03"
+  userId    String
+  month     String
   amount    Float
   paidOn    DateTime?
-  isPaid    Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  project   Project  @relation(fields: [projectId], references: [id])
-  worker    Worker   @relation(fields: [workerId], references: [id])
+  isPaid    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  project   Project   @relation(fields: [projectId], references: [id])
+  worker    Worker    @relation(fields: [workerId], references: [id])
 }
 
 model Contractor {
-  id         String   @id @default(uuid())
-  userId     String    // Supabase User ID
-  name       String
-  specialty  String   // civil, electrical, plumbing, etc.
-  rating     Float    @default(0)
-  contact    String?
-  available  Boolean  @default(true)
-  createdAt  DateTime @default(now())
-
-  user       User     @relation(fields: [userId], references: [id])
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  specialty String
+  rating    Float    @default(0)
+  contact   String?
+  available Boolean  @default(true)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }

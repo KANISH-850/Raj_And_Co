@@ -24,6 +24,7 @@ const createExpenseSchema = z.object({
 router.use(authMiddleware);
 
 // Global endpoints
+router.get('/', expensesController.listAll);
 router.get('/summary', expensesController.getGlobalSummary);
 router.put('/:id', expensesController.update);
 router.delete('/:id', expensesController.remove);

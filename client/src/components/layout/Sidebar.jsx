@@ -38,26 +38,23 @@ const Sidebar = () => {
                         key={item.path}
                         to={item.path}
                         className={({ isActive }) => `
-                            flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300
+                            flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 relative
                             ${isActive 
-                                ? 'bg-primary-600 text-white shadow-lg' 
-                                : 'text-secondary-400 hover:text-white hover:bg-secondary-800'}
+                                ? 'bg-primary-600/10 text-primary-400 shadow-sm border border-primary-500/20' 
+                                : 'text-secondary-400 hover:text-white hover:bg-secondary-800/50'}
                         `}
                     >
                         {item.icon}
                         <span className="font-medium">{item.label}</span>
-                        {/* Slide animation for active item */}
-                        <NavLink
-                            to={item.path}
-                        >
-                            {({ isActive }) => (
-                                isActive && (
-                                    <motion.div
-                                        layoutId="active-pill"
-                                        className="absolute left-0 w-1.5 h-6 bg-primary-400 rounded-r-full"
-                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                    />
-                                )
+                        
+                        {/* Active indicator bar */}
+                        <NavLink to={item.path}>
+                            {({ isActive }) => isActive && (
+                                <motion.div
+                                    layoutId="active-nav-pill"
+                                    className="absolute left-0 w-1 h-6 bg-primary-500 rounded-r-full"
+                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                />
                             )}
                         </NavLink>
                     </NavLink>

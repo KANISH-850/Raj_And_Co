@@ -3,8 +3,9 @@ const prisma = require('../../config/db');
 /**
  * List all tenders with status filter
  */
-const list = async ({ status }) => {
-  const where = status ? { status } : {};
+const list = async (userId, { status }) => {
+  const where = { userId };
+  if (status) where.status = status;
   return await prisma.tender.findMany({
     where,
     orderBy: { createdAt: 'desc' },
@@ -14,9 +15,10 @@ const list = async ({ status }) => {
 /**
  * Create a new tender
  */
-const create = async (payload) => {
+const create = async (userId, payload) => {
   return await prisma.tender.create({
     data: {
+      userId,
       projectId: payload.projectId || null,
       title: payload.title,
       tenderValue: payload.tenderValue,
@@ -29,9 +31,9 @@ const create = async (payload) => {
 /**
  * Update tender
  */
-const update = async (id, payload) => {
+const update = async (id, userId, payload) => {
   return await prisma.tender.update({
-    where: { id },
+    where: { id, userId },
     data: {
       ...payload,
       submittedDate: payload.submittedDate ? new Date(payload.submittedDate) : undefined,
@@ -42,8 +44,8 @@ const update = async (id, payload) => {
 /**
  * Delete tender
  */
-const remove = async (id) => {
-  return await prisma.tender.delete({ where: { id } });
+const remove = async (id, userId) => {
+  return await prisma.tender.delete({ where: { id, userId } });
 };
 
 module.exports = { list, create, update, remove };

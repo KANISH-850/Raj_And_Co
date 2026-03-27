@@ -3,8 +3,8 @@ const prisma = require('../../config/db');
 /**
  * List all contractors with filter by specialty and availability
  */
-const list = async ({ specialty, available }) => {
-  const where = {};
+const list = async (userId, { specialty, available }) => {
+  const where = { userId };
   if (specialty) where.specialty = specialty;
   if (available !== undefined) where.available = (available === 'true');
   
@@ -17,9 +17,10 @@ const list = async ({ specialty, available }) => {
 /**
  * Add contractor
  */
-const create = async (payload) => {
+const create = async (userId, payload) => {
   return await prisma.contractor.create({
     data: {
+      userId,
       name: payload.name,
       specialty: payload.specialty,
       rating: payload.rating || 0,
@@ -32,9 +33,9 @@ const create = async (payload) => {
 /**
  * Update contractor
  */
-const update = async (id, payload) => {
+const update = async (id, userId, payload) => {
   return await prisma.contractor.update({
-    where: { id },
+    where: { id, userId },
     data: payload,
   });
 };
@@ -42,8 +43,8 @@ const update = async (id, payload) => {
 /**
  * Delete contractor
  */
-const remove = async (id) => {
-  return await prisma.contractor.delete({ where: { id } });
+const remove = async (id, userId) => {
+  return await prisma.contractor.delete({ where: { id, userId } });
 };
 
 /**
