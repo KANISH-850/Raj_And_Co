@@ -1,53 +1,45 @@
-/**
- * =============================================================
- * RAJ & CO — Centralized API Client
- * =============================================================
- * Single source of truth for all HTTP communication.
- * - Auth: Supabase session token (Bearer)
- * - Base URL: Environment-aware (local vs. production)
- * - Error: Global interceptor with user-friendly messages
- * =============================================================
- */
 import axios from 'axios';
 import { supabase } from '../utils/supabaseClient';
 
-// ─── Environment-Safe Base URL ────────────────────────────────
-//   LOCAL  → http://localhost:5000/api
-//   PROD   → https://your-backend.onrender.com/api  (from .env)
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/,https://raj-backend.onrender.com/api';
+/**
+ * =============================================================
+ * RAJ & CO — Production-Ready API Client
+ * =============================================================
+ * Strategy:
+ * 1. Read VITE_API_BASE_URL from the deployment environment.
+ * 2. Fallback to localhost during development.
+ * 3. Attach Supabase JWT for relational data isolation.
+ * =============================================================
+ */
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 15000, // 15s — accommodates Render cold-start
+  timeout: 15000, 
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// ─── Request Interceptor: Attach Supabase Token ───────────────
+// ─── Request Interceptor: Auth Injection ──────────────────────
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      if (!supabase) {
-        console.warn('[API] Supabase client not initialized — skipping token.');
-        return config;
-      }
+      if (!supabase) return config;
 
-      const { data: { session }, error } = await supabase.auth.getSession();
-
-      if (error) {
-        console.warn('[API] Could not retrieve session:', error.message);
-      }
+      // Retrieve current session directly from Supabase Client
+      const { data: { session } } = await supabase.auth.getSession();
 
       if (session?.access_token) {
         config.headers.Authorization = `Bearer ${session.access_token}`;
       }
     } catch (err) {
-      console.error('[API] Request interceptor error:', err);
+      console.warn('[API] Auth interceptor failed:', err.message);
     }
 
     if (import.meta.env.DEV) {
-      console.log(`📤 [API REQUEST] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+      console.log(`🚀 [API] ${config.method?.toUpperCase()} → ${config.url}`);
     }
 
     return config;
@@ -55,33 +47,20 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ─── Response Interceptor: Global Error Handling ──────────────
+// ─── Response Interceptor: Error Normalization ────────────────
 apiClient.interceptors.response.use(
-  (response) => {
-    if (import.meta.env.DEV) {
-      console.log(`📥 [API RESPONSE] ${response.status} ${response.config.url}`);
-    }
-    return response;
-  },
+  (response) => response,
   async (error) => {
     const status = error.response?.status;
-    const message = error.response?.data?.message || error.message || 'Unknown error';
+    const backendMessage = error.response?.data?.error || error.response?.data?.message;
+    const message = backendMessage || error.message || 'Network connectivity issue';
 
-    console.error(`🔴 [API ERROR] ${status || 'NETWORK'} — ${message}`);
+    console.error(`❌ [API] ${status || 'TIMEOUT'} — ${message}`);
 
-    if (status === 401) {
-      console.warn('[API] Unauthorized — session may have expired.');
-      // To auto-logout on 401, uncomment:
-      // await supabase?.auth.signOut();
-      // window.location.href = '/login';
-    }
-
-    if (status === 403) {
-      console.warn('[API] Forbidden — insufficient permissions.');
-    }
-
-    if (!error.response) {
-      console.error('[API] Network error — backend may be sleeping (Render cold-start). Retrying is advised.');
+    // Critical: Handle session expiry
+    if (status === 401 && !window.location.pathname.includes('/login')) {
+      console.warn('[API] Token expired — please re-authenticate.');
+      // Optional: await supabase.auth.signOut(); window.location.href = '/login';
     }
 
     return Promise.reject(error);
