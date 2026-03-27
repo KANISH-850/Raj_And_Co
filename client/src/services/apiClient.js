@@ -12,7 +12,7 @@ import { supabase } from '../utils/supabaseClient';
  * =============================================================
  */
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://raj-backend.onrender.com/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://raj-and-co.onrender.com/api';
 
 const apiClient = axios.create({
   baseURL: BASE_URL,

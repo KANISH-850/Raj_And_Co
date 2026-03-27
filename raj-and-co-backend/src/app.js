@@ -22,24 +22,15 @@ const app = express();
  */
 app.use(helmet());
 
-// ─── CORS ───────────────────────────────────────────────────
-// Accepts requests from local dev AND any deployed frontend.
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  process.env.FRONTEND_URL,
-].filter(Boolean); // Remove undefined entries
-
+// ─── CORS (DEEP DEBUG MODE) ──────────────────────────────────
+// Allows ANY origin temporarily to identify the "Network Error"
+// Once working, reset this to process.env.FRONTEND_URL
+// ─────────────────────────────────────────────────────────────
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow server-to-server calls (no origin) and listed origins
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS blocked for origin: ${origin}`));
-    }
-  },
+  origin: true, // true = allow any origin that makes the request
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
@@ -49,12 +40,11 @@ app.use(morgan('dev'));
  * Rate Limiting
  */
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again after 15 minutes',
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: 'Too many requests from this IP'
 });
 
-// Apply rate limit specifically to auth routes
 app.use('/api/auth', limiter);
 
 /**
@@ -62,42 +52,31 @@ app.use('/api/auth', limiter);
  */
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectsRoutes);
-app.use('/api/workers', workersRoutes); // Also handles /:id stand-alone
-app.use('/api/expenses', expensesRoutes); // Also handles /:id stand-alone
+app.use('/api/workers', workersRoutes);
+app.use('/api/expenses', expensesRoutes);
 app.use('/api/tenders', tendersRoutes);
 app.use('/api/salary', salaryRoutes);
 app.use('/api/contractors', contractorsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
 /**
- * Root Route — Prevents 'Cannot GET /' errors
+ * Root Route & Health Check
  */
 app.get('/', (req, res) => {
   res.status(200).json({
     project: '🏗️ Raj & Co Management System',
-    status: 'Backend is running',
-    version: '1.0.0',
-    docs: '/health',
+    status: 'Backend is running (CORS Debug Mode Active)',
   });
 });
 
-/**
- * Health Check
- */
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', timestamp: new Date() });
+  res.status(200).json({ status: 'OK', origin: req.headers.origin });
 });
 
-/**
- * 404 — Catch-All for Unknown Routes
- */
 app.use((req, res) => {
   res.status(404).json({ error: `Route not found: ${req.method} ${req.originalUrl}` });
 });
 
-/**
- * Global Error Handler
- */
 app.use(errorHandler);
 
 module.exports = app;
