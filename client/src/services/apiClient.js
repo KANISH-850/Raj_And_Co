@@ -14,7 +14,7 @@ import { supabase } from '../utils/supabaseClient';
 // ─── Environment-Safe Base URL ────────────────────────────────
 //   LOCAL  → http://localhost:5000/api
 //   PROD   → https://your-backend.onrender.com/api  (from .env)
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/,https://raj-backend.onrender.com/api';
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
