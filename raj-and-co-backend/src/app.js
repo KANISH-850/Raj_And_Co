@@ -16,7 +16,6 @@ const contractorsRoutes = require('./modules/contractors/contractors.routes');
 const dashboardRoutes = require('./modules/dashboard/dashboard.routes');
 const searchRoutes = require('./modules/search/search.routes');
 const documentsRoutes = require('./modules/documents/documents.routes');
-const adminRoutes = require('./modules/admin/admin.routes');
 
 const app = express();
 
@@ -63,7 +62,6 @@ app.use('/api/contractors', contractorsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/documents', documentsRoutes);
-app.use('/api/admin', adminRoutes);
 
 /**
  * Root Route & Health Check

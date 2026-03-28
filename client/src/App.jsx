@@ -7,14 +7,12 @@ import Layout from './components/layout/Layout';
 import Home from './pages/Home';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
-import PendingApproval from './pages/auth/PendingApproval';
 import Projects from './pages/Projects';
 import ProjectDetail from './pages/ProjectDetail';
 import Tenders from './pages/Tenders';
 import Accounts from './pages/Accounts';
 import Salary from './pages/Salary';
 import Contractors from './pages/Contractors';
-import UserApproval from './pages/admin/UserApproval';
 
 function App() {
   return (
@@ -33,7 +31,6 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/pending-approval" element={<PendingApproval />} />
           
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route path="/" element={<Home />} />
@@ -43,7 +40,6 @@ function App() {
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/salary" element={<Salary />} />
             <Route path="/contractors" element={<Contractors />} />
-            <Route path="/admin/users" element={<UserApproval />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

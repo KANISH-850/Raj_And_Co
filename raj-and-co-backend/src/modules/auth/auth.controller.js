@@ -40,14 +40,4 @@ const me = async (req, res, next) => {
   }
 };
 
-const status = async (req, res, next) => {
-  try {
-    const prisma = require('../../config/db');
-    const count = await prisma.user.count();
-    return success(res, { userCount: count }, 'System status retrieved');
-  } catch (err) {
-    next(err);
-  }
-};
-
-module.exports = { register, login, me, status };
+module.exports = { register, login, me };
