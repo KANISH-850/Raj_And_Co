@@ -198,11 +198,13 @@ const Tenders = () => {
 
   // Delete
   const handleDelete = async (id) => {
+    if (!window.confirm('IRREVERSIBLE: Purge this tender from your registry?')) return;
+    const tid = toast.loading('Purging record...');
     try {
       await apiClient.delete(`/tenders/selected/${id}`);
       setMyTenders(p => p.filter(t => t.id !== id));
-      toast.success('Removed.');
-    } catch { toast.error('Delete failed.'); }
+      toast.success('Record Decommissioned.', { id: tid });
+    } catch { toast.error('Command Failed.', { id: tid }); }
   };
 
   // Add Bid

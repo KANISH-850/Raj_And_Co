@@ -13,6 +13,8 @@ const Projects = () => {
     const [isSaving, setIsSaving] = useState(false);
     const [optimisticProjects, setOptimisticProjects] = useState([]);
 
+    const [editingProject, setEditingProject] = useState(null);
+
     const { execute: fetchProjects, data: apiResponse, loading, error } = useApi(
         () => apiClient.get('/projects')
     );
@@ -32,6 +34,20 @@ const Projects = () => {
         e.preventDefault();
         const formData = new FormData(e.target);
         const projectData = Object.fromEntries(formData.entries());
+
+        if (editingProject) {
+            const toastId = toast.loading('Updating site protocols...');
+            try {
+                await apiClient.put(`/projects/${editingProject.id}`, projectData);
+                toast.success('Project parameters updated!', { id: toastId });
+                setEditingProject(null);
+                setIsModalOpen(false);
+                fetchProjects();
+            } catch (err) {
+                toast.error('Update failed.', { id: toastId });
+            }
+            return;
+        }
 
         // Optimistic Entry
         const tempId = `optimistic-${Date.now()}`;
@@ -63,10 +79,25 @@ const Projects = () => {
         }
     };
 
+    const handleDeleteProject = async (id) => {
+        if (!window.confirm('Are you sure you want to decommission this site? This action is irreversible.')) return;
+        
+        const toastId = toast.loading('Decommissioning site...');
+        try {
+            await apiClient.delete(`/projects/${id}`);
+            toast.success('Site removed from active grid.', { id: toastId });
+            setOptimisticProjects(prev => prev.filter(p => p.id !== id));
+        } catch (err) {
+            toast.error('Decommissioning failed.', { id: toastId });
+        }
+    };
+
     const filteredProjects = useMemo(() => {
         return optimisticProjects.filter(p => {
-            const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                 p.location?.toLowerCase().includes(searchTerm.toLowerCase());
+            const name = p.name || '';
+            const location = p.location || '';
+            const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                 location.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesFilter = statusFilter === 'All' || p.status?.toLowerCase() === statusFilter.toLowerCase();
             return matchesSearch && matchesFilter;
         });
@@ -80,7 +111,7 @@ const Projects = () => {
                    <p className="text-secondary-500 font-medium mt-1">Real-time oversight of all construction sites.</p>
                 </div>
                 <button 
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => { setEditingProject(null); setIsModalOpen(true); }}
                     className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-primary-600/20 active:scale-95 transition-all flex items-center gap-2 group"
                 >
                     <PlusCircle size={22} className="group-hover:rotate-90 transition-transform" />
@@ -105,8 +136,12 @@ const Projects = () => {
                         >
                             <div className="flex justify-between items-center mb-10">
                                 <div>
-                                    <h2 className="text-3xl font-black text-secondary-900 tracking-tighter">Project Setup</h2>
-                                    <p className="text-secondary-500 text-sm">Define your project parameters below.</p>
+                                    <h2 className="text-3xl font-black text-secondary-900 tracking-tighter">
+                                        {editingProject ? 'Modify Site' : 'Project Setup'}
+                                    </h2>
+                                    <p className="text-secondary-500 text-sm">
+                                        {editingProject ? `Editing ${editingProject.name}` : 'Define your project parameters below.'}
+                                    </p>
                                 </div>
                                 <button onClick={() => setIsModalOpen(false)} className="p-3 bg-secondary-50 hover:bg-secondary-100 rounded-2xl transition-all">
                                      <X size={20} className="text-secondary-500" />
@@ -120,6 +155,7 @@ const Projects = () => {
                                         <input 
                                             name="name"
                                             required
+                                            defaultValue={editingProject?.name}
                                             className="w-full px-6 py-5 bg-secondary-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 font-bold transition-all outline-none placeholder-secondary-300"
                                             placeholder="e.g. Skyline Residency Phase 1"
                                         />
@@ -131,6 +167,7 @@ const Projects = () => {
                                             <input 
                                                 name="location"
                                                 required
+                                                defaultValue={editingProject?.location}
                                                 className="w-full pl-14 pr-6 py-5 bg-secondary-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 font-bold transition-all outline-none placeholder-secondary-300"
                                                 placeholder="Bangalore, Karnataka"
                                             />
@@ -143,6 +180,7 @@ const Projects = () => {
                                                 <Tag className="absolute left-5 top-1/2 -translate-y-1/2 text-secondary-400" size={18} />
                                                 <select 
                                                     name="type"
+                                                    defaultValue={editingProject?.type || 'Commercial'}
                                                     className="w-full pl-14 pr-6 py-5 bg-secondary-50 border-none rounded-2xl font-bold appearance-none outline-none"
                                                 >
                                                     <option>Commercial</option>
@@ -158,7 +196,7 @@ const Projects = () => {
                                                 className="bg-secondary-900 text-white py-5 rounded-2xl font-black text-lg hover:bg-secondary-800 transition-all flex items-center justify-center gap-2"
                                             >
                                                 <Check size={24} />
-                                                Confirm Launch
+                                                {editingProject ? 'Save Changes' : 'Confirm Launch'}
                                             </button>
                                         </div>
                                     </div>
@@ -247,7 +285,13 @@ const Projects = () => {
                     >
                         <AnimatePresence>
                             {filteredProjects.map((proj, i) => (
-                                <ProjectCard key={proj.id} project={proj} delay={i * 0.05} />
+                                <ProjectCard 
+                                    key={proj.id} 
+                                    project={proj} 
+                                    delay={i * 0.05} 
+                                    onEdit={() => { setEditingProject(proj); setIsModalOpen(true); }}
+                                    onDelete={handleDeleteProject}
+                                />
                             ))}
                         </AnimatePresence>
                     </motion.div>

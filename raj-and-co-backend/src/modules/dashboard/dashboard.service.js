@@ -1,19 +1,112 @@
 const prisma = require('../../config/db');
 
 /**
- * Get aggregated dashboard overview for a user
+ * Get aggregated dashboard overview for a user with smart intelligence
  */
 const getOverview = async (userId) => {
-  // Parallel fetch for stats
-  const [activeProjects, totalProjects, totalTenders, totalExpense, unpaidSalary] = await Promise.all([
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const next48h = new Date(now);
+  next48h.setDate(next48h.getDate() + 2);
+
+  // Parallel fetch for stats and alerts
+  const [
+    activeProjects, 
+    totalProjects, 
+    totalTenders, 
+    totalExpense, 
+    unpaidSalary,
+    unpaidSalaryCount,
+    upcomingTenders,
+    projectsWithExpenses
+  ] = await Promise.all([
     prisma.project.count({ where: { userId, status: 'active' } }),
     prisma.project.count({ where: { userId } }),
     prisma.tender.count({ where: { userId, status: 'submitted' } }),
     prisma.expense.aggregate({ where: { userId }, _sum: { amount: true } }),
-    prisma.salary.aggregate({ where: { userId, isPaid: false }, _sum: { amount: true } })
+    prisma.salary.aggregate({ where: { userId, isPaid: false }, _sum: { amount: true } }),
+    prisma.salary.count({ where: { userId, isPaid: false } }),
+    prisma.selectedTender.findMany({
+      where: { 
+        userId, 
+        deadline: { lte: next48h, gte: now },
+        status: { notIn: ['WON', 'LOST'] }
+      }
+    }),
+    prisma.project.findMany({
+      where: { userId, status: 'active' },
+      include: { 
+        expenses: { select: { amount: true } },
+        _count: { select: { workers: true } }
+      }
+    })
   ]);
 
-  // Fetch recent activities (concatenated list of projects & expenses)
+  // Alert Generation Logic
+  const alerts = [];
+  
+  // 1. Tender Deadlines
+  upcomingTenders.forEach(t => {
+    alerts.push({
+      type: 'warning',
+      category: 'Tender',
+      message: `Tender deadline tomorrow: ${t.title}`,
+      action: '/tenders'
+    });
+  });
+
+  // 2. Salary Pending
+  if (unpaidSalaryCount > 0) {
+    alerts.push({
+      type: 'info',
+      category: 'Payroll',
+      message: `Salary pending for ${unpaidSalaryCount} members`,
+      action: '/salary'
+    });
+  }
+
+  // 3. Project Budget Alerts
+  let mostExpensiveProject = null;
+  let maxExpense = 0;
+
+  projectsWithExpenses.forEach(p => {
+    const spent = p.expenses.reduce((acc, curr) => acc + curr.amount, 0);
+    const budget = parseFloat(p.tenderRef || 0);
+
+    if (spent > maxExpense) {
+      maxExpense = spent;
+      mostExpensiveProject = { name: p.name, spent };
+    }
+
+    if (budget > 0) {
+        if (spent > budget) {
+            alerts.push({
+                type: 'danger',
+                category: 'Budget',
+                message: `Expense exceeded budget: ${p.name}`,
+                action: `/projects/${p.id}`
+            });
+        } else if (budget - spent < 50000) {
+            alerts.push({
+                type: 'warning',
+                category: 'Budget',
+                message: `Low balance on ${p.name}: ₹${(budget-spent).toLocaleString()} left`,
+                action: `/projects/${p.id}`
+            });
+        }
+    }
+  });
+
+  // Intel Summary
+  const intel = {
+    topPriority: upcomingTenders.length > 0 ? `${upcomingTenders.length} tenders need action` : "No urgent deadlines",
+    mostExpensive: mostExpensiveProject ? `${mostExpensiveProject.name} (₹${mostExpensiveProject.spent.toLocaleString()})` : "N/A",
+    pendingActions: alerts.length,
+    cashFlowTrend: "Stable" // Mock trend for now
+  };
+
+  // Fetch recent activities
   const projects = await prisma.project.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
@@ -52,7 +145,9 @@ const getOverview = async (userId) => {
       totalExpense: totalExpense._sum.amount || 0,
       unpaidSalary: unpaidSalary._sum.amount || 0
     },
-    activities
+    activities,
+    alerts: alerts.slice(0, 5),
+    intel
   };
 };
 
@@ -71,7 +166,7 @@ const seedDataForUser = async (userId) => {
       type: 'commercial',
       status: 'active',
       startDate: new Date('2024-01-01'),
-      tenderRef: 'TNDR-BLR-889'
+      tenderRef: '5000000'
     }
   });
 
@@ -83,7 +178,7 @@ const seedDataForUser = async (userId) => {
       type: 'government',
       status: 'active',
       startDate: new Date('2024-02-15'),
-      tenderRef: 'GOV-NHAI-776'
+      tenderRef: '12000000'
     }
   });
 
@@ -101,6 +196,22 @@ const seedDataForUser = async (userId) => {
       { projectId: project1.id, userId, category: 'labour', description: 'Weekly wage settlement P1', amount: 42000, date: new Date() },
       { projectId: project2.id, userId, category: 'equipment', description: 'JCB Rent for Foundations', amount: 95000, date: new Date() },
     ]
+  });
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  await prisma.selectedTender.create({
+    data: {
+        userId,
+        title: 'Airport Cargo Terminal - Phase 4',
+        tenderNumber: 'BNG-AIR-009',
+        department: 'AAI',
+        estimatedValue: 45000000,
+        deadline: tomorrow,
+        status: 'SELECTED',
+        priority: 'high'
+    }
   });
 
   await prisma.tender.createMany({

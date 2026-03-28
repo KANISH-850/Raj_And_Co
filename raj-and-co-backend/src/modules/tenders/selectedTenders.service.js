@@ -1,6 +1,21 @@
 const prisma = require('../../config/db');
 
+/**
+ * List with automation: If deadline passed, auto-close
+ */
 const list = async (userId) => {
+  const now = new Date();
+  
+  // Auto-close expired tenders
+  await prisma.selectedTender.updateMany({
+    where: { 
+      userId, 
+      deadline: { lt: now },
+      status: { notIn: ['WON', 'LOST', 'CLOSED'] }
+    },
+    data: { status: 'CLOSED' }
+  });
+
   return await prisma.selectedTender.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
@@ -15,9 +30,11 @@ const create = async (userId, payload) => {
       title: payload.title,
       department: payload.department || null,
       estimatedValue: payload.estimatedValue ? parseFloat(payload.estimatedValue) : null,
+      deadline: payload.deadline ? new Date(payload.deadline) : null,
       source: payload.source || null,
       notes: payload.notes || null,
       status: 'SELECTED',
+      priority: payload.priority || 'medium'
     },
   });
 };

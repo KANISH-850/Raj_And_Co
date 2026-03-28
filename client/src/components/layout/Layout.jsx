@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import Breadcrumbs from './Breadcrumbs';
+import MobileQuickActions from './MobileQuickActions';
 import { motion } from 'framer-motion';
 
 const Layout = () => {
@@ -32,6 +33,7 @@ const Layout = () => {
             <Outlet />
           </motion.div>
         </main>
+        <MobileQuickActions />
       </div>
     </div>
   );

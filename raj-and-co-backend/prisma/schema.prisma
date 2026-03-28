@@ -35,6 +35,8 @@ model Project {
   salaries  Salary[]
   tenders   Tender[]
   workers   Worker[]
+  documents Document[]
+  actualBudget Float?
 }
 
 model Worker {
@@ -48,6 +50,7 @@ model Worker {
   createdAt  DateTime  @default(now())
   salaries   Salary[]
   project    Project   @relation(fields: [projectId], references: [id])
+  documents  Document[]
 }
 
 model Expense {
@@ -72,6 +75,7 @@ model Tender {
   submittedDate DateTime?
   createdAt     DateTime  @default(now())
   project       Project?  @relation(fields: [projectId], references: [id])
+  documents     Document[]
 }
 
 model Salary {
@@ -100,12 +104,29 @@ model Contractor {
   user      User     @relation(fields: [userId], references: [id])
 }
 
+model Document {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  type      String
+  url       String
+  category  String?  // 'tender', 'project', 'worker', 'legal'
+  projectId String?
+  tenderId  String?
+  workerId  String?
+  createdAt DateTime @default(now())
+  project   Project? @relation(fields: [projectId], references: [id])
+  tender    Tender?  @relation(fields: [tenderId], references: [id])
+  worker    Worker?  @relation(fields: [workerId], references: [id])
+}
+
 enum TenderStatus {
   SELECTED
   DOCUMENT_PENDING
   SUBMITTED
   WON
   LOST
+  CLOSED
 }
 
 model SelectedTender {
@@ -116,7 +137,9 @@ model SelectedTender {
   department     String?
   estimatedValue Float?
   selectedDate   DateTime     @default(now())
+  deadline       DateTime?
   status         TenderStatus @default(SELECTED)
+  priority       String       @default("medium") // high, medium, low
   source         String?
   notes          String?
   createdAt      DateTime     @default(now())

@@ -14,6 +14,8 @@ const tendersRoutes = require('./modules/tenders/tenders.routes');
 const salaryRoutes = require('./modules/salary/salary.routes');
 const contractorsRoutes = require('./modules/contractors/contractors.routes');
 const dashboardRoutes = require('./modules/dashboard/dashboard.routes');
+const searchRoutes = require('./modules/search/search.routes');
+const documentsRoutes = require('./modules/documents/documents.routes');
 
 const app = express();
 
@@ -58,6 +60,8 @@ app.use('/api/tenders', tendersRoutes);
 app.use('/api/salary', salaryRoutes);
 app.use('/api/contractors', contractorsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/documents', documentsRoutes);
 
 /**
  * Root Route & Health Check

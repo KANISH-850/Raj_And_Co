@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Folder, MapPin, Calendar, CheckSquare, MoreVertical, TrendingUp } from 'lucide-react';
+import { Folder, MapPin, Calendar, CheckSquare, MoreVertical, TrendingUp, Edit2, Trash2, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const ProjectCard = ({ project, delay }) => {
+const ProjectCard = ({ project, delay, onEdit, onDelete }) => {
     const navigate = useNavigate();
 
     const getStatusColor = (status) => {
@@ -36,8 +36,31 @@ const ProjectCard = ({ project, delay }) => {
                     </div>
                 </div>
             )}
-            <div className="absolute top-6 right-8 text-secondary-400 opacity-0 group-hover:opacity-100 transition-opacity">
-                <MoreVertical size={20} />
+            <div className="absolute top-6 right-8 z-30 group/menu">
+                <button 
+                    onClick={(e) => { e.stopPropagation(); }}
+                    className="p-2 text-secondary-400 hover:text-secondary-900 hover:bg-white rounded-xl transition-all"
+                >
+                    <MoreVertical size={20} />
+                </button>
+                
+                {/* Dropdown Menu */}
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-secondary-100 py-3 opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all z-40 transform origin-top-right">
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onEdit(project); }}
+                        className="w-full text-left px-5 py-2.5 text-sm font-bold text-secondary-700 hover:bg-secondary-50 hover:text-primary-600 flex items-center gap-3 transition-colors"
+                    >
+                        <Edit2 size={16} />
+                        Edit Properties
+                    </button>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onDelete(project.id); }}
+                        className="w-full text-left px-5 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 flex items-center gap-3 transition-colors"
+                    >
+                        <Trash2 size={16} />
+                        Decommission Site
+                    </button>
+                </div>
             </div>
 
             <div className="flex flex-col gap-6">
