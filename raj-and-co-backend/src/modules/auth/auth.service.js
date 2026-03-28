@@ -45,7 +45,7 @@ const login = async (email, password) => {
 const getUserById = async (id) => {
   return await prisma.user.findUnique({
     where: { id },
-    select: { id: true, name: true, email: true, createdAt: true },
+    select: { id: true, name: true, email: true, role: true, isApproved: true, createdAt: true },
   });
 };
 

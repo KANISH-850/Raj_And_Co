@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import {
-  Home, Briefcase, FileText, CreditCard, Users, HardHat, LogOut, X
+  Home, Briefcase, FileText, CreditCard, Users, HardHat, LogOut, X, ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,9 +12,10 @@ const menuItems = [
   { path: '/accounts',   icon: <CreditCard size={20} />,label: 'Accounts' },
   { path: '/salary',     icon: <Users size={20} />,     label: 'Salary' },
   { path: '/contractors',icon: <HardHat size={20} />,   label: 'Contractors' },
+  { path: '/admin/users',icon: <ShieldCheck size={20} />,label: 'Security Panel', adminOnly: true },
 ];
 
-const SidebarContent = ({ onClose, logout }) => (
+const SidebarContent = ({ onClose, logout, role }) => (
   <div className="flex flex-col h-full p-6">
     {/* Brand */}
     <div className="flex items-center justify-between mb-10">
@@ -32,7 +33,7 @@ const SidebarContent = ({ onClose, logout }) => (
 
     {/* Navigation */}
     <nav className="flex-1 space-y-2">
-      {menuItems.map((item) => (
+      {menuItems.filter(item => !item.adminOnly || role === 'admin').map((item) => (
         <NavLink
           key={item.path}
           to={item.path}
@@ -74,11 +75,12 @@ const SidebarContent = ({ onClose, logout }) => (
 );
 
 const Sidebar = ({ mobileOpen, onClose }) => {
+  const { role, logout } = useAuth();
   return (
     <>
       {/* ── Desktop Sidebar (always visible on lg+) ── */}
       <aside className="hidden lg:flex w-64 glass-dark h-full flex-col shadow-2xl relative z-20">
-        <SidebarContent logout={useAuth().logout} onClose={null} />
+        <SidebarContent logout={logout} role={role} onClose={null} />
       </aside>
 
       {/* ── Mobile Drawer ── */}
@@ -103,7 +105,7 @@ const Sidebar = ({ mobileOpen, onClose }) => {
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               className="fixed top-0 left-0 h-full w-72 glass-dark shadow-2xl z-50 lg:hidden"
             >
-              <SidebarContent logout={useAuth().logout} onClose={onClose} />
+              <SidebarContent logout={logout} role={role} onClose={onClose} />
             </motion.aside>
           </>
         )}

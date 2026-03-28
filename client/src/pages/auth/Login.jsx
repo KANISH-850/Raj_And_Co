@@ -9,8 +9,20 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [userCount, setUserCount] = useState(null);
   const { login, supabase } = useAuth();
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    const fetchStatus = async () => {
+        try {
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/auth/status`);
+            const data = await res.json();
+            if (data.success) setUserCount(data.data.userCount);
+        } catch (err) { console.warn("Status Sync Protocol Failed."); }
+    };
+    fetchStatus();
+  }, []);
 
   const lastUser = localStorage.getItem("lastUser");
   const [showWelcome, setShowWelcome] = useState(!!lastUser);
@@ -156,13 +168,16 @@ const Login = () => {
         </motion.button>
 
         <div className="mt-8 text-center">
-            <p className="text-secondary-400">
-                Don't have an account? 
-                <Link to="/register" className="text-primary-400 hover:text-primary-300 ml-2 font-bold inline-flex items-center gap-1 group">
-                    <UserPlus size={16} className="group-hover:-translate-y-0.5 transition-transform" />
-                    Register
+            {userCount === 0 ? (
+                <Link to="/register" className="text-secondary-400 hover:text-white text-[10px] font-black uppercase tracking-[0.3em] inline-flex items-center gap-2 group">
+                   <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+                   Initial Provisioning Required • Setup Account
                 </Link>
-            </p>
+            ) : (
+                <p className="text-secondary-500 text-[10px] font-black uppercase tracking-[0.3em]">
+                    Internal Command Node • Authorized Personnel Only
+                </p>
+            )}
         </div>
       </motion.div>
     </div>

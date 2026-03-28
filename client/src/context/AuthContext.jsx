@@ -9,28 +9,60 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [isApproved, setIsApproved] = useState(false);
+  const [role, setRole] = useState('user');
+
+  // Helper to get extra user info from our DB
+  const checkUserApproval = async (user) => {
+    if (!user) {
+        setIsApproved(false);
+        setRole('user');
+        return;
+    }
+    try {
+        // Use dynamically imported apiClient or direct fetch to avoid circularity if needed
+        // but AuthContext is high level.
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+            setIsApproved(data.data.isApproved);
+            setRole(data.data.role);
+            // Enrich user object
+            setCurrentUser(p => ({ ...p, isApproved: data.data.isApproved, role: data.data.role }));
+        }
+    } catch (err) {
+        console.error("Auth Sync Error:", err);
+    }
+  };
+
   useEffect(() => {
-    // 0. Safety Catch
     if (!supabase) {
-        console.warn("⚠️ [RAJ & CO BUG]: Supabase URL or Anon Key is missing in .env!");
         setLoading(false);
         return;
     }
 
-    // 1. Initial user check
     const checkUser = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) console.error("Supabase Session Error:", error);
-      
-      setCurrentUser(session?.user ?? null);
+      if (session?.user) {
+          setCurrentUser(session.user);
+          await checkUserApproval(session.user);
+      }
       setLoading(false);
     };
 
     checkUser();
 
-    // 2. Auth changes (Login/Logout) listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setCurrentUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+          setCurrentUser(session.user);
+          await checkUserApproval(session.user);
+      } else {
+          setCurrentUser(null);
+          setIsApproved(false);
+          setRole('user');
+      }
       setLoading(false);
     });
 
@@ -69,6 +101,8 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     currentUser,
+    isApproved,
+    role,
     loading,
     login,
     logout,
