@@ -2,58 +2,72 @@ const { createClient } = require('@supabase/supabase-js');
 const { error } = require('../utils/response');
 const prisma = require('../config/db');
 
-// 1. Initialize Supabase Admin for verification
 const supabase = createClient(
   process.env.SUPABASE_URL || '',
   process.env.SUPABASE_ANON_KEY || ''
 );
 
-/**
- * JWT Authentication Middleware using Supabase Auth
- * Includes local Prisma mapping for relational integrity
- */
 const authMiddleware = async (req, res, next) => {
   try {
+    console.log('[AUTH DEBUG] Incoming request:', req.method, req.originalUrl);
+
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+
+    if (!authHeader) {
+      console.warn('[AUTH DEBUG] Authorization header missing');
       return error(res, 'Authorization token is missing', 401);
     }
 
+    console.log('[AUTH DEBUG] Raw header exists');
+
+    if (!authHeader.startsWith('Bearer ')) {
+      console.warn('[AUTH DEBUG] Invalid header format:', authHeader.slice(0, 30));
+      return error(res, 'Invalid authorization format', 401);
+    }
+
     const token = authHeader.split(' ')[1];
-    
-    // 2. Ask Supabase to verify this token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    console.log('[AUTH DEBUG] Token received:', token?.slice(0, 20) + '...');
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
+      console.error(
+        '[AUTH DEBUG] Supabase verification failed:',
+        authError?.message || 'User not found'
+      );
+      console.error('[AUTH DEBUG] Env check:', {
+        SUPABASE_URL: !!process.env.SUPABASE_URL,
+        SUPABASE_ANON_KEY: !!process.env.SUPABASE_ANON_KEY,
+      });
       return error(res, 'Invalid or expired session', 401);
     }
 
-    // 3. RELATIONAL INTEGRITY SYNC: Ensure the user exists in our Prisma database
-    // This allows related models (Projects, Contractors) to link successfully via FK
+    console.log('[AUTH DEBUG] Verified user:', user.email);
+
     await prisma.user.upsert({
       where: { id: user.id },
-      update: { 
-        email: user.email, 
-        name: user.user_metadata?.full_name || user.email.split('@')[0] 
+      update: { email: user.email },
+      create: {
+        id: user.id,
+        email: user.email,
+        name: user.user_metadata?.full_name || user.email.split('@')[0],
       },
-      create: { 
-        id: user.id, 
-        email: user.email, 
-        name: user.user_metadata?.full_name || user.email.split('@')[0] 
-      }
     });
 
-    // 4. Attach Supabase user info to the request
     req.user = {
       id: user.id,
       email: user.email,
-      ...user.user_metadata
+      ...user.user_metadata,
     };
-    
+
     next();
   } catch (err) {
-    console.error("Auth Middleware Error:", err);
-    return error(res, 'Relational Auth Sync Error', 401);
+    console.error('[AUTH DEBUG] Critical exception:', err.message);
+    return error(res, 'Internal Authentication Sync Error', 401);
   }
 };
 

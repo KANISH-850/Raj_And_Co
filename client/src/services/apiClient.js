@@ -1,45 +1,41 @@
 import axios from 'axios';
 import { supabase } from '../utils/supabaseClient';
 
-/**
- * =============================================================
- * RAJ & CO — Production-Ready API Client
- * =============================================================
- * Strategy:
- * 1. Read VITE_API_BASE_URL from the deployment environment.
- * 2. Fallback to localhost during development.
- * 3. Attach Supabase JWT for relational data isolation.
- * =============================================================
- */
-
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://raj-and-co.onrender.com/api';
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 15000, 
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  timeout: 15000,
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// ─── Request Interceptor: Auth Injection ──────────────────────
+// ─── Request Interceptor: Attach Supabase Bearer Token ───────
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      if (!supabase) return config;
+      if (!supabase) {
+        console.warn('[API INTERCEPTOR] Supabase client not initialized — skipping token.');
+        return config;
+      }
 
-      // Retrieve current session directly from Supabase Client
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (error) {
+        console.warn('[API INTERCEPTOR] Session error:', error.message);
+      }
 
       if (session?.access_token) {
         config.headers.Authorization = `Bearer ${session.access_token}`;
+        console.log('[API INTERCEPTOR] Token attached ✅');
+      } else {
+        console.warn('[API INTERCEPTOR] No active session — request will be sent without token.');
       }
     } catch (err) {
-      console.warn('[API] Auth interceptor failed:', err.message);
+      console.error('[API INTERCEPTOR] Exception during token attachment:', err.message);
     }
 
     if (import.meta.env.DEV) {
-      console.log(`🚀 [API] ${config.method?.toUpperCase()} → ${config.url}`);
+      console.log(`🚀 [API] ${config.method?.toUpperCase()} → ${config.baseURL}${config.url}`);
     }
 
     return config;
@@ -47,20 +43,17 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ─── Response Interceptor: Error Normalization ────────────────
+// ─── Response Interceptor: Normalize Errors ───────────────────
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const status = error.response?.status;
-    const backendMessage = error.response?.data?.error || error.response?.data?.message;
-    const message = backendMessage || error.message || 'Network connectivity issue';
+    const message = error.response?.data?.error || error.message || 'Unknown error';
 
-    console.error(`❌ [API] ${status || 'TIMEOUT'} — ${message}`);
+    console.error(`❌ [API ERROR] ${status || 'NETWORK'} — ${message}`);
 
-    // Critical: Handle session expiry
-    if (status === 401 && !window.location.pathname.includes('/login')) {
-      console.warn('[API] Token expired — please re-authenticate.');
-      // Optional: await supabase.auth.signOut(); window.location.href = '/login';
+    if (status === 401) {
+      console.warn('[API] 401 Unauthorized — token may be missing or expired on server.');
     }
 
     return Promise.reject(error);
