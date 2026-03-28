@@ -14,8 +14,9 @@ model User {
   email       String       @unique
   password    String?
   createdAt   DateTime     @default(now())
-  contractors Contractor[]
-  projects    Project[]
+  contractors      Contractor[]
+  projects         Project[]
+  selectedTenders  SelectedTender[]
 }
 
 model Project {
@@ -97,4 +98,27 @@ model Contractor {
   available Boolean  @default(true)
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
+}
+
+enum TenderStatus {
+  SELECTED
+  DOCUMENT_PENDING
+  SUBMITTED
+  WON
+  LOST
+}
+
+model SelectedTender {
+  id             String       @id @default(uuid())
+  userId         String
+  tenderNumber   String
+  title          String
+  department     String?
+  estimatedValue Float?
+  selectedDate   DateTime     @default(now())
+  status         TenderStatus @default(SELECTED)
+  source         String?
+  notes          String?
+  createdAt      DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id])
 }
