@@ -13,7 +13,11 @@ const list = async (req, res, next) => {
     });
     return paginated(res, data, page, limit, total, 'Projects retrieved');
   } catch (err) {
-    next(err);
+    console.error("SERVER CRASH:", err);
+    return res.status(500).json({
+      error: "Internal Server Error",
+      message: err.message
+    });
   }
 };
 

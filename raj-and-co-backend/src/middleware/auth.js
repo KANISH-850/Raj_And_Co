@@ -24,6 +24,8 @@ const authMiddleware = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
+    console.log("TOKEN:", token ? `Bearer ${token.substring(0, 10)}...` : null);
+    console.log("SUPABASE URL:", process.env.SUPABASE_URL);
     console.log('[AUTH] Token received, length:', token?.length);
 
     // ─── Supabase getUser with 10s timeout protection ────────────

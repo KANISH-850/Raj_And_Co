@@ -9,11 +9,13 @@ datasource db {
 }
 
 model User {
-  id          String       @id @default(uuid())
-  name        String
-  email       String       @unique
-  password    String?
-  createdAt   DateTime     @default(now())
+  id               String           @id @default(uuid())
+  name             String
+  email            String           @unique
+  password         String?
+  role             String           @default("user")
+  isApproved       Boolean          @default(false)
+  createdAt        DateTime         @default(now())
   contractors      Contractor[]
   projects         Project[]
   selectedTenders  SelectedTender[]
