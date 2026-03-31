@@ -112,6 +112,11 @@ const Accounts = () => {
         toast.success('Audit Log Generated! Download starting...');
     };
 
+    const handleExportPDF = () => {
+        window.print();
+        toast.success('Preparing document for print/PDF...');
+    };
+
     return (
         <div className="space-y-8 pb-20 print:p-0">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
@@ -121,11 +126,18 @@ const Accounts = () => {
                 </div>
                 <div className="flex flex-wrap gap-4">
                     <button 
+                        onClick={handleExportPDF}
+                        className="px-8 py-4 bg-white border border-secondary-200 text-secondary-600 rounded-2xl flex items-center gap-2 hover:bg-secondary-50 transition-all font-black uppercase tracking-widest text-[10px] shadow-sm active:scale-95 group"
+                    >
+                        <FileBarChart size={18} className="text-secondary-400 group-hover:text-amber-500 transition-colors" />
+                        Export PDF
+                    </button>
+                    <button 
                         onClick={handleExport}
                         className="px-8 py-4 bg-white border border-secondary-200 text-secondary-600 rounded-2xl flex items-center gap-2 hover:bg-secondary-50 transition-all font-black uppercase tracking-widest text-[10px] shadow-sm active:scale-95 group"
                     >
                         <Download size={18} className="text-secondary-400 group-hover:text-primary-500 transition-colors" />
-                        Export Audit
+                        Audit CSV
                     </button>
                     <button 
                         onClick={() => { setEditingTx(null); setIsModalOpen(true); }}

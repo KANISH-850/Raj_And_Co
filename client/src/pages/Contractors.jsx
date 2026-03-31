@@ -23,6 +23,7 @@ const Contractors = () => {
     const handleSaveContractor = async (e) => {
         e.preventDefault();
         const data = Object.fromEntries(new FormData(e.target));
+        console.log('👷 [CONTRACTORS] Onboarding data:', data);
         data.rating = parseInt(data.rating || 0);
 
         const tid = toast.loading('Syncing contractor profile...');
@@ -91,11 +92,11 @@ const Contractors = () => {
                                     <div className="space-y-1">
                                         <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Specialization</label>
                                         <select name="specialty" defaultValue={editingContractor?.specialty} className="w-full px-6 py-4 bg-secondary-50 border-none rounded-xl font-bold outline-none">
-                                            <option value="Civil">Civil Works</option>
-                                            <option value="Electrical">Electrical</option>
-                                            <option value="Plumbing">Plumbing</option>
-                                            <option value="Interior">Interior / Fit-out</option>
-                                            <option value="Other">Other</option>
+                                            <option value="civil">Civil Works</option>
+                                            <option value="electrical">Electrical</option>
+                                            <option value="plumbing">Plumbing</option>
+                                            <option value="automation">Technological / Automation</option>
+                                            <option value="misc">Miscellaneous</option>
                                         </select>
                                     </div>
                                     <div className="space-y-1">
