@@ -5,15 +5,7 @@ const { success, error } = require('../../utils/response');
  * Register Controller
  */
 const register = async (req, res, next) => {
-  try {
-    const userSnapshot = await authService.register(req.body);
-    return success(res, userSnapshot, 'User registered successfully', 201);
-  } catch (err) {
-    if (err.code === 'P2002') { // Unique constraint failed
-      return error(res, 'Email already in use', 409);
-    }
-    next(err);
-  }
+  return error(res, 'New registrations are disabled', 403);
 };
 
 /**

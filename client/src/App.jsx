@@ -6,7 +6,6 @@ import Layout from './components/layout/Layout';
 // Pages
 import Home from './pages/Home';
 import Login from './pages/auth/Login';
-import Register from './pages/auth/Register';
 import PendingApproval from './pages/auth/PendingApproval';
 import Projects from './pages/Projects';
 import ProjectDetail from './pages/ProjectDetail';
@@ -32,7 +31,6 @@ function App() {
         />
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
           <Route path="/pending-approval" element={<PendingApproval />} />
           
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogIn, Mail, Lock, UserPlus } from 'lucide-react';
+import { LogIn, Mail, Lock } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -155,15 +155,6 @@ const Login = () => {
           Google
         </motion.button>
 
-        <div className="mt-8 text-center">
-            <p className="text-secondary-400">
-                Don't have an account? 
-                <Link to="/register" className="text-primary-400 hover:text-primary-300 ml-2 font-bold inline-flex items-center gap-1 group">
-                    <UserPlus size={16} className="group-hover:-translate-y-0.5 transition-transform" />
-                    Register
-                </Link>
-            </p>
-        </div>
       </motion.div>
     </div>
   );

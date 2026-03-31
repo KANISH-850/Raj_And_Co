@@ -74,15 +74,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (email, password, name) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { display_name: name }
-      }
-    });
-    if (error) throw error;
-    return data;
+    throw new Error('New registrations are currently disabled by the administrator.');
   };
 
   const value = {
