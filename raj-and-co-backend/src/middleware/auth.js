@@ -9,34 +9,51 @@ const supabase = createClient(
 
 const authMiddleware = async (req, res, next) => {
   try {
-    console.log('[AUTH DEBUG] Incoming request:', req.method, req.originalUrl);
-
+    console.log('[AUTH] Incoming request:', req.method, req.originalUrl);
+    
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
-      console.warn('[AUTH DEBUG] Authorization header missing');
+      console.warn('[AUTH] ❌ Authorization header missing');
       return error(res, 'Authorization token is missing', 401);
     }
 
     if (!authHeader.startsWith('Bearer ')) {
-      console.warn('[AUTH DEBUG] Invalid header format');
+      console.warn('[AUTH] ❌ Invalid header format');
       return error(res, 'Invalid authorization format', 401);
     }
 
     const token = authHeader.split(' ')[1];
+    console.log('[AUTH] Token received, length:', token?.length);
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token);
+    // ─── Supabase getUser with 10s timeout protection ────────────
+    let userData;
+    try {
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Supabase auth timed out after 10s')), 10000)
+      );
+      const userPromise = supabase.auth.getUser(token);
+      userData = await Promise.race([userPromise, timeoutPromise]);
+    } catch (timeoutErr) {
+      console.error('[AUTH] ⏱️ Supabase getUser timed out:', timeoutErr.message);
+      return error(res, 'Authentication service timed out. Please try again.', 503);
+    }
+    // ─────────────────────────────────────────────────────────────
 
-    if (authError || !user) {
-      console.error('[AUTH DEBUG] Supabase verification failed:', authError?.message || 'User not found');
+    const { data, error: authError } = userData;
+
+    if (authError || !data?.user) {
+      console.error('[AUTH] ❌ Supabase verification failed:', authError?.message || 'User not found');
+      console.error('[AUTH] SUPABASE_URL configured:', !!process.env.SUPABASE_URL);
+      console.error('[AUTH] SUPABASE_ANON_KEY configured:', !!process.env.SUPABASE_ANON_KEY);
       return error(res, 'Invalid or expired session', 401);
     }
 
+    const user = data.user;
+    console.log('[AUTH] ✅ User verified:', user.email);
+
     const userCount = await prisma.user.count();
-    
+
     // Sync with local DB
     const dbUser = await prisma.user.upsert({
       where: { id: user.id },
@@ -45,16 +62,15 @@ const authMiddleware = async (req, res, next) => {
         id: user.id,
         email: user.email,
         name: user.user_metadata?.full_name || user.email.split('@')[0],
-        // The first user ever becomes the Admin & gets Auto-Clearance
         role: userCount === 0 ? 'admin' : 'user',
-        isApproved: userCount === 0 
+        isApproved: userCount === 0
       },
     });
 
-    // Enforcement: If not approved, block everything EXCEPT /api/auth/me
+    // Block unapproved users except on /api/auth/me
     if (!dbUser.isApproved && !req.originalUrl.includes('/api/auth/me')) {
-       console.warn('[AUTH DEBUG] Blocking unapproved user:', dbUser.email);
-       return error(res, 'Account pending administrator approval. Please wait for a few hours.', 403);
+      console.warn('[AUTH] 🚫 Blocking unapproved user:', dbUser.email);
+      return error(res, 'Account pending administrator approval. Please wait for a few hours.', 403);
     }
 
     req.user = {
@@ -67,8 +83,8 @@ const authMiddleware = async (req, res, next) => {
 
     next();
   } catch (err) {
-    console.error('[AUTH DEBUG] Critical sync error:', err.message);
-    return error(res, 'Internal Authentication Sync Error', 401);
+    console.error('[AUTH] 💥 Critical sync error:', err.message);
+    return error(res, 'Internal Authentication Sync Error', 500);
   }
 };
 

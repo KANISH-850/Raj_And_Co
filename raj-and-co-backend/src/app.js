@@ -24,6 +24,18 @@ const app = express();
  */
 app.use(helmet());
 
+// ─── Global Request Logger ────────────────────────────────────
+app.use((req, res, next) => {
+  const start = Date.now();
+  console.log(`➡️  ${req.method} ${req.url}`);
+  res.on('finish', () => {
+    const ms = Date.now() - start;
+    console.log(`✅ ${req.method} ${req.url} — ${res.statusCode} (${ms}ms)`);
+  });
+  next();
+});
+// ─────────────────────────────────────────────────────────────
+
 // ─── CORS (DEEP DEBUG MODE) ──────────────────────────────────
 // Allows ANY origin temporarily to identify the "Network Error"
 // Once working, reset this to process.env.FRONTEND_URL
@@ -74,7 +86,13 @@ app.get('/', (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', origin: req.headers.origin });
+  res.status(200).json({
+    status: 'OK',
+    supabase_url_set: !!process.env.SUPABASE_URL,
+    supabase_key_set: !!process.env.SUPABASE_ANON_KEY,
+    node_env: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.use((req, res) => {

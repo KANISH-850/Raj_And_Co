@@ -5,7 +5,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://raj-and-co.onrend
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 15000,
+  timeout: 30000, // 30s — accounts for Render cold starts (~15-25s)
   headers: { 'Content-Type': 'application/json' },
 });
 
