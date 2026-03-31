@@ -61,6 +61,9 @@ const Salary = () => {
         const data = Object.fromEntries(new FormData(e.target));
         console.log('💳 [SALARY] Saving payroll record:', data);
         data.amount = parseFloat(data.amount);
+        
+        // Extract YYYY-MM for the backend month requirement
+        data.month = data.date.substring(0, 7); 
         data.isPaid = false;
 
         const tid = toast.loading('Saving payroll record...');
@@ -150,8 +153,8 @@ const Salary = () => {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Billing Month</label>
-                                        <input name="month" type="month" required defaultValue={editingSalary?.month || monthFilter} className="w-full px-6 py-4 bg-secondary-50 border-none rounded-xl font-bold outline-none" />
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Protocol Date</label>
+                                        <input name="date" type="date" required defaultValue={editingSalary?.date ? editingSalary.date.split('T')[0] : new Date().toISOString().split('T')[0]} className="w-full px-6 py-4 bg-secondary-50 border-none rounded-xl font-bold outline-none" />
                                     </div>
                                     <div className="space-y-1">
                                         <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Payable Sum (₹)</label>

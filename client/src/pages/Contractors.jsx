@@ -104,9 +104,15 @@ const Contractors = () => {
                                         <input name="rating" type="number" min="1" max="5" defaultValue={editingContractor?.rating || 5} className="w-full px-6 py-4 bg-secondary-50 border-none rounded-xl font-bold outline-none" />
                                     </div>
                                 </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Contact Protocol</label>
-                                    <input name="contact" required defaultValue={editingContractor?.contact} className="w-full px-6 py-4 bg-secondary-50 border-none rounded-xl font-bold outline-none" placeholder="+91 9xxxx xxxxx" />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Contact Protocol</label>
+                                        <input name="contact" required defaultValue={editingContractor?.contact} className="w-full px-6 py-4 bg-secondary-50 border-none rounded-xl font-bold outline-none" placeholder="+91 9xxxx xxxxx" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Onboarding Date</label>
+                                        <input type="date" name="onboardDate" defaultValue={new Date().toISOString().split('T')[0]} className="w-full px-6 py-4 bg-secondary-50 border-none rounded-xl font-bold outline-none" />
+                                    </div>
                                 </div>
                                 <button type="submit" className="w-full bg-secondary-900 text-white py-5 rounded-xl font-black uppercase text-xs tracking-widest shadow-xl">
                                     <Check size={18} className="inline mr-2" /> Confirm Protocol

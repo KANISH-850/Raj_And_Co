@@ -289,6 +289,19 @@ const ProjectDetail = () => {
                             <form onSubmit={handleEditSave} className="space-y-8">
                                 <div className="space-y-4">
                                     <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-[0.2em]">Project Schedule (Start Date)</label>
+                                        <div className="relative">
+                                            <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 text-secondary-400" size={18} />
+                                            <input 
+                                                name="startDate" 
+                                                type="date" 
+                                                required 
+                                                defaultValue={project?.startDate ? new Date(project.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]} 
+                                                className="w-full pl-14 pr-6 py-5 bg-secondary-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 font-bold transition-all outline-none" 
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
                                         <label className="text-[10px] font-black text-secondary-400 uppercase tracking-[0.2em]">Project Designation</label>
                                         <input name="name" required defaultValue={project?.name} className="w-full px-6 py-5 bg-secondary-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 font-bold transition-all outline-none" placeholder="e.g. Skyline Residency" />
                                     </div>
