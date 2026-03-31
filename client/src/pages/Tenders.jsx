@@ -160,6 +160,7 @@ const Tenders = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.target));
+    console.log('💾 [TENDERS] Registering tender:', data);
     if (data.estimatedValue) data.estimatedValue = parseFloat(data.estimatedValue);
     const tid = toast.loading('Saving to register...');
     setShowSelectModal(false);
@@ -168,6 +169,7 @@ const Tenders = () => {
       setMyTenders(p => [res.data.data, ...p]);
       toast.success('✅ Tender saved to your register!', { id: tid });
     } catch (err) {
+      console.error('❌ [TENDERS] Register failed:', err);
       toast.error(err.response?.data?.error || 'Failed.', { id: tid });
     }
   };
@@ -211,6 +213,7 @@ const Tenders = () => {
   const handleAddBid = async (e) => {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.target));
+    console.log('📨 [TENDERS] Adding new bid:', data);
     data.tenderValue = parseFloat(data.tenderValue);
     const tempId = `tmp-${Date.now()}`;
     setOptimisticBids(p => [{ ...data, id: tempId, status: 'submitted', isOptimistic: true }, ...p]);
@@ -221,6 +224,7 @@ const Tenders = () => {
       toast.success('Bid registered!', { id: tid });
       fetchBids();
     } catch (err) {
+      console.error('❌ [TENDERS] Bid addition failed:', err);
       toast.error(err.response?.data?.error || 'Failed.', { id: tid });
       setOptimisticBids(p => p.filter(t => t.id !== tempId));
     }
@@ -490,6 +494,10 @@ const Tenders = () => {
               <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Source</label>
               <input name="source" className="w-full px-4 py-3.5 bg-secondary-50 rounded-2xl font-bold outline-none text-sm border-none" placeholder="e-Tender / Offline" />
             </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Selected Date</label>
+              <input name="selectedDate" type="date" className="w-full px-4 py-3.5 bg-secondary-50 rounded-2xl font-bold outline-none text-sm border-none" defaultValue={new Date().toISOString().split('T')[0]} />
+            </div>
           </div>
           <div className="space-y-1.5">
             <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Notes</label>
@@ -524,6 +532,10 @@ const Tenders = () => {
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Authority</label>
               <input name="authority" className="w-full px-4 py-3.5 bg-secondary-50 rounded-2xl font-bold outline-none text-sm border-none" placeholder="PWD / KMC" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-secondary-400 uppercase tracking-widest">Submission Date</label>
+              <input name="submissionDate" type="date" className="w-full px-4 py-3.5 bg-secondary-50 rounded-2xl font-bold outline-none text-sm border-none" defaultValue={new Date().toISOString().split('T')[0]} />
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 pt-2">

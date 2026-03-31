@@ -67,8 +67,26 @@ const update = async (id, userId, payload) => {
 /**
  * Delete project
  */
+/**
+ * Delete project (Cascade delete children manually due to DB settings)
+ */
 const remove = async (id, userId) => {
-  return await prisma.project.delete({ where: { id, userId } });
+  return await prisma.$transaction(async (tx) => {
+    // 1. Delete dependent records first to satisfy foreign key constraints
+    await tx.document.deleteMany({ where: { projectId: id, userId } });
+    await tx.expense.deleteMany({ where: { projectId: id, userId } });
+    await tx.salary.deleteMany({ where: { projectId: id, userId } });
+    await tx.tender.updateMany({ 
+      where: { projectId: id, userId }, 
+      data: { projectId: null } // Optional: or delete them. Let's disconnect them to preserve tender history.
+    });
+    await tx.worker.deleteMany({ where: { projectId: id, userId } });
+    
+    // 2. Finally delete the project
+    return await tx.project.delete({ 
+      where: { id, userId } 
+    });
+  });
 };
 
 /**

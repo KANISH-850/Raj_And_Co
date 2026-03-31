@@ -27,7 +27,7 @@ const Home = () => {
 
     const handleSeedData = async () => {
         setIsSeeding(true);
-        const toastId = toast.loading('Initializing Decision Support Environment...');
+        const toastId = toast.loading('Preparing sample data...');
         try {
             await apiClient.post('/dashboard/seed');
             toast.success('Enterprise data and active alerts generated!', { id: toastId });
@@ -40,17 +40,17 @@ const Home = () => {
     };
 
     const stats = [
-        { label: 'Active Projects', value: statsData.activeProjects || 0, icon: <Briefcase />, color: 'bg-blue-600', trend: `of ${statsData.totalProjects || 0} total`, link: '/projects' },
-        { label: 'Pending Bids', value: statsData.totalTenders || 0, icon: <FileText />, color: 'bg-amber-500', trend: 'Review Registry', link: '/tenders' },
-        { label: 'Global Expense', value: `₹${((statsData.totalExpense || 0)/100000).toFixed(1)}L`, icon: <CreditCard />, color: 'bg-rose-500', trend: 'Monthly Outflow', link: '/accounts' },
-        { label: 'Staff Payroll', value: `₹${((statsData.unpaidSalary || 0)/100000).toFixed(1)}L`, icon: <Users />, color: 'bg-emerald-500', trend: 'Pending Release', link: '/salary' },
+        { label: 'Running Projects', value: statsData.activeProjects || 0, icon: <Briefcase />, color: 'bg-blue-600', trend: `${statsData.totalProjects || 0} total`, link: '/projects' },
+        { label: 'Open Tenders', value: statsData.totalTenders || 0, icon: <FileText />, color: 'bg-amber-500', trend: 'View Bids', link: '/tenders' },
+        { label: 'Total Expenses', value: `₹${((statsData.totalExpense || 0)/100000).toFixed(1)}L`, icon: <CreditCard />, color: 'bg-rose-500', trend: 'Money spent', link: '/accounts' },
+        { label: 'Worker Salaries', value: `₹${((statsData.unpaidSalary || 0)/100000).toFixed(1)}L`, icon: <Users />, color: 'bg-emerald-500', trend: 'To be paid', link: '/salary' },
     ];
 
     const intelCards = [
-        { label: 'Top Priority Today', val: intel.topPriority, icon: <Target className="text-rose-500" />, sub: 'Tender deadlines' },
-        { label: 'Most Expensive Site', val: intel.mostExpensive, icon: <TrendingUp className="text-secondary-400" />, sub: 'Budget focus' },
-        { label: 'Critical Actions', val: intel.pendingActions || 0, icon: <AlertTriangle className="text-amber-500" />, sub: 'Needs attention' },
-        { label: 'Cash Flow Direction', val: intel.cashFlowTrend, icon: <Clock className="text-emerald-500" />, sub: 'Quarterly trend' },
+        { label: 'Urgent Tasks', val: intel.topPriority, icon: <Target className="text-rose-500" />, sub: 'Coming soon' },
+        { label: 'Highest Budget', val: intel.mostExpensive, icon: <TrendingUp className="text-secondary-400" />, sub: 'Money spent' },
+        { label: 'Actions Needed', val: intel.pendingActions || 0, icon: <AlertTriangle className="text-amber-500" />, sub: 'Needs attention' },
+        { label: 'Money Trend', val: intel.cashFlowTrend, icon: <Clock className="text-emerald-500" />, sub: 'Last 3 months' },
     ];
 
     return (
@@ -58,10 +58,10 @@ const Home = () => {
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="space-y-2">
                     <h1 className="text-4xl font-black text-secondary-900 tracking-tighter flex items-center gap-4">
-                        Executive Overview
+                        Project Overview
                         {loading && <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />}
                     </h1>
-                    <p className="text-secondary-500 font-medium">Real-time command telemetry for Raj & Co Construction Management.</p>
+                    <p className="text-secondary-500 font-medium">View your projects and tenders at a glance.</p>
                 </div>
                 
                 {statsData.totalProjects === 0 && (
@@ -104,14 +104,14 @@ const Home = () => {
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-rose-50 border border-rose-100/50 rounded-[3rem] p-10 shadow-xl shadow-rose-500/5">
                         <div className="flex items-center justify-between mb-8">
                             <h2 className="text-2xl font-black text-rose-900 tracking-tighter flex items-center gap-3">
-                                <AlertTriangle className="text-rose-500" /> Smart Alerts
+                                <AlertTriangle className="text-rose-500" /> Notifications
                             </h2>
                             <span className="px-3 py-1 bg-rose-500/10 text-rose-600 rounded-full text-[10px] font-black uppercase">{alerts.length} URGENT</span>
                         </div>
                         <div className="space-y-4">
                             {alerts.length === 0 ? (
                                 <div className="py-10 text-center text-rose-300 font-bold flex items-center justify-center gap-3">
-                                    <CheckCircle size={24} /> No active threats to project status.
+                                    <CheckCircle size={24} /> Everything is on track.
                                 </div>
                             ) : alerts.map((alert, i) => (
                                 <div key={i} onClick={() => navigate(alert.action)} className="flex items-center justify-between p-6 bg-white rounded-2xl hover:bg-white/80 transition-all cursor-pointer border border-rose-100 group">
@@ -134,10 +134,10 @@ const Home = () => {
                     <div className="glass rounded-[3rem] p-10 shadow-2xl shadow-secondary-200/50">
                         <div className="flex items-center justify-between mb-8">
                             <div>
-                                <h2 className="text-2xl font-black text-secondary-900 tracking-tighter">Event Telemetry</h2>
-                                <p className="text-sm text-secondary-400 font-bold">Latest system interactions across global sites.</p>
+                                <h2 className="text-2xl font-black text-secondary-900 tracking-tighter">Recent Activity</h2>
+                                <p className="text-sm text-secondary-400 font-bold">Latest updates from all your sites.</p>
                             </div>
-                            <button onClick={() => toast('Exporting Telemetry Log...')} className="px-5 py-2.5 bg-secondary-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl active:scale-95">Export PDF</button>
+                            <button onClick={() => toast('Generating PDF...')} className="px-5 py-2.5 bg-secondary-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl active:scale-95">Download PDF</button>
                         </div>
 
                         <div className="space-y-6">
@@ -160,13 +160,13 @@ const Home = () => {
                     </div>
                 </div>
 
-                {/* Right Column Insight */}
+                {/* Right Column */}
                 <div className="space-y-8">
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }} className="bg-secondary-900 rounded-[3rem] p-10 shadow-3xl shadow-secondary-900/30 text-white min-h-[400px] flex flex-col justify-between overflow-hidden relative">
                          <div className="absolute top-0 right-0 w-40 h-40 bg-primary-500/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
                          <div className="space-y-4 relative z-10">
-                            <h2 className="text-2xl font-black tracking-tighter">Site Allocation</h2>
-                            <p className="text-secondary-400 text-xs font-bold uppercase tracking-widest leading-relaxed">Intelligence-driven market sector classification.</p>
+                            <h2 className="text-2xl font-black tracking-tighter">Work Distribution</h2>
+                            <p className="text-secondary-400 text-xs font-bold uppercase tracking-widest leading-relaxed">Breakdown of your project categories.</p>
                          </div>
 
                          <div className="flex-1 flex items-center justify-center py-6">
@@ -206,18 +206,18 @@ const Home = () => {
                         <div className="flex items-center gap-4">
                              <div className="w-12 h-12 bg-primary-500 text-white rounded-2xl flex items-center justify-center shadow-lg"><Database size={24} /></div>
                              <div>
-                                 <h4 className="font-black text-secondary-900">System Integrity</h4>
-                                 <p className="text-xs text-secondary-500 font-bold uppercase tracking-widest">Global Node: Bengaluru</p>
+                                 <h4 className="font-black text-secondary-900">System Status</h4>
+                                 <p className="text-xs text-secondary-500 font-bold uppercase tracking-widest">Location: Bengaluru</p>
                              </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                              <div className="p-4 bg-secondary-50 rounded-2xl">
-                                  <p className="text-[8px] font-black text-secondary-400 uppercase mb-1">Backup Sync</p>
+                                  <p className="text-[8px] font-black text-secondary-400 uppercase mb-1">Data Backup</p>
                                   <p className="text-xs font-black text-emerald-600">ACTIVE</p>
                              </div>
                              <div className="p-4 bg-secondary-50 rounded-2xl">
-                                  <p className="text-[8px] font-black text-secondary-400 uppercase mb-1">Latency</p>
-                                  <p className="text-xs font-black text-secondary-900">24ms</p>
+                                  <p className="text-[8px] font-black text-secondary-400 uppercase mb-1">Connection</p>
+                                  <p className="text-xs font-black text-secondary-900">EXCELLENT</p>
                              </div>
                         </div>
                     </div>

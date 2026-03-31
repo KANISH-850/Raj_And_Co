@@ -8,6 +8,8 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState(null);
+  const [isApproved, setIsApproved] = useState(false);
 
   useEffect(() => {
     // 0. Safety Catch
@@ -22,7 +24,15 @@ export const AuthProvider = ({ children }) => {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) console.error("Supabase Session Error:", error);
       
-      setCurrentUser(session?.user ?? null);
+      const user = session?.user ?? null;
+      setCurrentUser(user);
+      if (user) {
+        setRole(user.user_metadata?.role || 'user');
+        setIsApproved(user.user_metadata?.is_approved !== false); 
+      } else {
+        setRole(null);
+        setIsApproved(false);
+      }
       setLoading(false);
     };
 
@@ -30,7 +40,15 @@ export const AuthProvider = ({ children }) => {
 
     // 2. Auth changes (Login/Logout) listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setCurrentUser(session?.user ?? null);
+      const user = session?.user ?? null;
+      setCurrentUser(user);
+      if (user) {
+        setRole(user.user_metadata?.role || 'user');
+        setIsApproved(user.user_metadata?.is_approved !== false);
+      } else {
+        setRole(null);
+        setIsApproved(false);
+      }
       setLoading(false);
     });
 
@@ -70,6 +88,8 @@ export const AuthProvider = ({ children }) => {
   const value = {
     currentUser,
     loading,
+    role,
+    isApproved,
     login,
     logout,
     register,

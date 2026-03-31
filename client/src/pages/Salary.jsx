@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, FileText, Filter, Calendar, IndianRupee, Printer, CheckCircle, Clock, Loader2, AlertCircle, Search, ArrowRight, Check, X, Edit2, Trash2 } from 'lucide-react';
+import { Users, FileText, Filter, Calendar, IndianRupee, Printer, CheckCircle, Clock, Loader2, AlertCircle, Search, ArrowRight, Check, X, Edit2, Trash2, PlusCircle } from 'lucide-react';
 import apiClient from '../services/apiClient';
 import useApi from '../hooks/useApi';
 import { toast } from 'react-hot-toast';
@@ -33,6 +33,7 @@ const Salary = () => {
     const projects = projectsRes?.data || [];
 
     const handleMarkPaid = async (id) => {
+        console.log('💸 [SALARY] Marking as paid:', id);
         const tid = toast.loading('Disbursing funds...');
         try {
             await apiClient.patch(`/salary/${id}/mark-paid`);
@@ -58,6 +59,7 @@ const Salary = () => {
     const handleSaveSalary = async (e) => {
         e.preventDefault();
         const data = Object.fromEntries(new FormData(e.target));
+        console.log('💳 [SALARY] Saving payroll record:', data);
         data.amount = parseFloat(data.amount);
         data.isPaid = false;
 

@@ -36,6 +36,7 @@ const Projects = () => {
         const projectData = Object.fromEntries(formData.entries());
 
         if (editingProject) {
+            console.log('🔄 [PROJECTS] Updating project:', editingProject.id, projectData);
             const toastId = toast.loading('Updating site protocols...');
             try {
                 await apiClient.put(`/projects/${editingProject.id}`, projectData);
@@ -44,10 +45,13 @@ const Projects = () => {
                 setIsModalOpen(false);
                 fetchProjects();
             } catch (err) {
+                console.error('❌ [PROJECTS] Update failed:', err);
                 toast.error('Update failed.', { id: toastId });
             }
             return;
         }
+
+        console.log('🚀 [PROJECTS] Creating new project:', projectData);
 
         // Optimistic Entry
         const tempId = `optimistic-${Date.now()}`;
@@ -74,8 +78,8 @@ const Projects = () => {
             toast.error('Site initialization failed.', { id: toastId });
             setOptimisticProjects(optimisticProjects); // Rollback on error
         } finally {
-            setIsSaving(true);
-            setTimeout(() => setIsSaving(false), 500); // Smooth transition
+            console.log('✅ [PROJECTS] Creation process finished.');
+            setIsSaving(false);
         }
     };
 
@@ -173,6 +177,19 @@ const Projects = () => {
                                             />
                                         </div>
                                     </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-secondary-400 uppercase tracking-[0.2em]">Project Schedule (Start Date)</label>
+                                        <div className="relative">
+                                            <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 text-secondary-400" size={18} />
+                                            <input 
+                                                name="startDate"
+                                                type="date"
+                                                required
+                                                defaultValue={editingProject?.startDate ? new Date(editingProject.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+                                                className="w-full pl-14 pr-6 py-5 bg-secondary-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 font-bold transition-all outline-none"
+                                            />
+                                        </div>
+                                    </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-secondary-400 uppercase tracking-[0.2em]">Category</label>
@@ -193,9 +210,10 @@ const Projects = () => {
                                         <div className="flex flex-col justify-end">
                                             <button 
                                                 type="submit"
-                                                className="bg-secondary-900 text-white py-5 rounded-2xl font-black text-lg hover:bg-secondary-800 transition-all flex items-center justify-center gap-2"
+                                                disabled={isSaving}
+                                                className="bg-secondary-900 text-white py-5 rounded-2xl font-black text-lg hover:bg-secondary-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                                             >
-                                                <Check size={24} />
+                                                {isSaving ? <Loader2 className="animate-spin" size={24} /> : <Check size={24} />}
                                                 {editingProject ? 'Save Changes' : 'Confirm Launch'}
                                             </button>
                                         </div>

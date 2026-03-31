@@ -57,6 +57,7 @@ const Accounts = () => {
     const handleSaveTransaction = async (e) => {
         e.preventDefault();
         const data = Object.fromEntries(new FormData(e.target));
+        console.log('📖 [ACCOUNTS] Saving transaction:', data);
         data.amount = parseFloat(data.amount);
         const projectId = data.projectId;
 

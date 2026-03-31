@@ -18,16 +18,12 @@ const authMiddleware = async (req, res, next) => {
       return error(res, 'Authorization token is missing', 401);
     }
 
-    console.log('[AUTH DEBUG] Raw header exists');
-
     if (!authHeader.startsWith('Bearer ')) {
-      console.warn('[AUTH DEBUG] Invalid header format:', authHeader.slice(0, 30));
+      console.warn('[AUTH DEBUG] Invalid header format');
       return error(res, 'Invalid authorization format', 401);
     }
 
     const token = authHeader.split(' ')[1];
-
-    console.log('[AUTH DEBUG] Token received:', token?.slice(0, 20) + '...');
 
     const {
       data: { user },
@@ -35,38 +31,43 @@ const authMiddleware = async (req, res, next) => {
     } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
-      console.error(
-        '[AUTH DEBUG] Supabase verification failed:',
-        authError?.message || 'User not found'
-      );
-      console.error('[AUTH DEBUG] Env check:', {
-        SUPABASE_URL: !!process.env.SUPABASE_URL,
-        SUPABASE_ANON_KEY: !!process.env.SUPABASE_ANON_KEY,
-      });
+      console.error('[AUTH DEBUG] Supabase verification failed:', authError?.message || 'User not found');
       return error(res, 'Invalid or expired session', 401);
     }
 
-    console.log('[AUTH DEBUG] Verified user:', user.email);
-
-    await prisma.user.upsert({
+    const userCount = await prisma.user.count();
+    
+    // Sync with local DB
+    const dbUser = await prisma.user.upsert({
       where: { id: user.id },
       update: { email: user.email },
       create: {
         id: user.id,
         email: user.email,
         name: user.user_metadata?.full_name || user.email.split('@')[0],
+        // The first user ever becomes the Admin & gets Auto-Clearance
+        role: userCount === 0 ? 'admin' : 'user',
+        isApproved: userCount === 0 
       },
     });
+
+    // Enforcement: If not approved, block everything EXCEPT /api/auth/me
+    if (!dbUser.isApproved && !req.originalUrl.includes('/api/auth/me')) {
+       console.warn('[AUTH DEBUG] Blocking unapproved user:', dbUser.email);
+       return error(res, 'Account pending administrator approval. Please wait for a few hours.', 403);
+    }
 
     req.user = {
       id: user.id,
       email: user.email,
+      role: dbUser.role,
+      isApproved: dbUser.isApproved,
       ...user.user_metadata,
     };
 
     next();
   } catch (err) {
-    console.error('[AUTH DEBUG] Critical exception:', err.message);
+    console.error('[AUTH DEBUG] Critical sync error:', err.message);
     return error(res, 'Internal Authentication Sync Error', 401);
   }
 };

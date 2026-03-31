@@ -64,7 +64,7 @@ const Navbar = ({ onMenuToggle }) => {
           <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary-400" size={18} />
           <input
             type="text"
-            placeholder="Search commands, sites, staff..."
+            placeholder="Search projects, workers, tenders..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onFocus={() => search.length > 1 && setShowResults(true)}
@@ -82,7 +82,7 @@ const Navbar = ({ onMenuToggle }) => {
                         <div className="p-8 text-center text-secondary-400 font-black uppercase text-[10px] tracking-widest">No Matches Found</div>
                     ) : (
                         <div className="max-h-[400px] overflow-y-auto space-y-1 scrollbar-none">
-                            <p className="px-4 py-2 text-[10px] font-black text-secondary-400 uppercase tracking-widest">Global Telemetry</p>
+                            <p className="px-4 py-2 text-[10px] font-black text-secondary-400 uppercase tracking-widest">Search Results</p>
                             {results.map((res, i) => (
                                 <button
                                     key={i}
@@ -129,7 +129,7 @@ const Navbar = ({ onMenuToggle }) => {
             <p className="text-sm font-black text-secondary-900 truncate max-w-[140px]">
               {currentUser?.displayName || 'User'}
             </p>
-            <p className="text-[10px] text-secondary-500 font-black uppercase tracking-tighter">Command Center</p>
+            <p className="text-[10px] text-secondary-500 font-black uppercase tracking-tighter">Profile</p>
           </div>
           <div className="w-10 h-10 bg-primary-600 text-white rounded-2xl flex items-center justify-center font-black shadow-lg shadow-primary-600/20 active:scale-90 transition-all cursor-pointer">
               {currentUser?.displayName ? currentUser.displayName[0] : 'A'}

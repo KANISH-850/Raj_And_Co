@@ -42,8 +42,20 @@ const updateWorker = async (id, userId, payload) => {
 /**
  * Remove worker
  */
+/**
+ * Remove worker (Cascade delete manually)
+ */
 const removeWorker = async (id, userId) => {
-  return await prisma.worker.delete({ where: { id, userId } });
+  return await prisma.$transaction(async (tx) => {
+    // 1. Delete dependent records
+    await tx.document.deleteMany({ where: { workerId: id, userId } });
+    await tx.salary.deleteMany({ where: { workerId: id, userId } });
+    
+    // 2. Finally delete the worker
+    return await tx.worker.delete({ 
+      where: { id, userId } 
+    });
+  });
 };
 
 module.exports = { listWorkers, addWorker, updateWorker, removeWorker };

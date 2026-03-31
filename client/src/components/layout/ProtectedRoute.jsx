@@ -2,7 +2,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 
 const ProtectedRoute = ({ children }) => {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, isApproved, loading } = useAuth();
 
   if (loading) {
     return (
@@ -14,6 +14,10 @@ const ProtectedRoute = ({ children }) => {
 
   if (!currentUser) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!isApproved && window.location.pathname !== '/pending-approval') {
+    return <Navigate to="/pending-approval" replace />;
   }
 
   return children;
