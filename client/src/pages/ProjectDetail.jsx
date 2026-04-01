@@ -20,9 +20,7 @@ const WorkerList = lazy(() => import('../components/projects/WorkerList'));
 const DailyExpenseLog = lazy(() => import('../components/projects/DailyExpenseLog'));
 const BudgetProgress = lazy(() => import('../components/projects/BudgetProgress'));
 const DocumentManager = lazy(() => import('../components/common/DocumentManager'));
-import apiClient from '../services/apiClient';
-import useApi from '../hooks/useApi';
-import { toast } from 'react-hot-toast';
+
 
 const ProjectDetail = () => {
     const { id } = useParams();
