@@ -40,6 +40,10 @@ const getById = async (req, res, next) => {
   try {
     const data = await projectsService.getById(req.params.id, req.user.id);
     if (!data) return error(res, 'Project not found', 404);
+    
+    // Add Vercel Edge Caching / Browser Caching with Stale-While-Revalidate
+    res.setHeader('Cache-Control', 'private, max-age=10, s-maxage=60, stale-while-revalidate=120');
+    
     return success(res, data, 'Project retrieved');
   } catch (err) {
     next(err);
@@ -76,6 +80,10 @@ const remove = async (req, res, next) => {
 const getSummary = async (req, res, next) => {
   try {
     const stats = await projectsService.getSummary(req.params.id, req.user.id);
+    
+    // Add Vercel Edge Caching / Browser Caching with Stale-While-Revalidate
+    res.setHeader('Cache-Control', 'private, max-age=30, s-maxage=120, stale-while-revalidate=240');
+    
     return success(res, stats, 'Project summary summary generated');
   } catch (err) {
     next(err);

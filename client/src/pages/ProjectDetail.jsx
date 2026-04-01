@@ -1,20 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
     ChevronLeft, Users, CreditCard, FileText, 
     PieChart as PieChartIcon, HardHat, TrendingUp, 
     Loader2, AlertCircle, Edit2, Trash2, MapPin, 
-    Tag, Check, X, Paperclip 
+    Tag, Check, X, Paperclip, Calendar
 } from 'lucide-react';
 import { 
     PieChart, Pie, Cell, Tooltip, 
     ResponsiveContainer 
 } from 'recharts';
-import WorkerList from '../components/projects/WorkerList';
-import DailyExpenseLog from '../components/projects/DailyExpenseLog';
-import BudgetProgress from '../components/projects/BudgetProgress';
-import DocumentManager from '../components/common/DocumentManager';
+import apiClient from '../services/apiClient';
+import useApi from '../hooks/useApi';
+import { toast } from 'react-hot-toast';
+
+// 1. Lazy load heavy child components
+const WorkerList = lazy(() => import('../components/projects/WorkerList'));
+const DailyExpenseLog = lazy(() => import('../components/projects/DailyExpenseLog'));
+const BudgetProgress = lazy(() => import('../components/projects/BudgetProgress'));
+const DocumentManager = lazy(() => import('../components/common/DocumentManager'));
 import apiClient from '../services/apiClient';
 import useApi from '../hooks/useApi';
 import { toast } from 'react-hot-toast';
@@ -25,27 +30,30 @@ const ProjectDetail = () => {
     const [activeTab, setActiveTab] = useState('workers');
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-    // API Hook for fetching single project
-    const { execute: fetchProject, data: projectRes, loading, error } = useApi(
-        (projId) => apiClient.get(`/projects/${projId}`)
+    // 2. Add API Cache Key for Stale-While-Revalidate
+    const { execute: fetchProject, data: projectRes, loading, error, clearCache } = useApi(
+        useCallback((projId) => apiClient.get(`/projects/${projId}`), []),
+        { cacheKey: `project-detail-${id}`, staleTime: 60000 }
     );
 
     const project = projectRes?.data;
 
     useEffect(() => {
         if (id) fetchProject(id);
-    }, [id]);
+    }, [id, fetchProject]);
 
-    const handleStatusChange = async (newStatus) => {
+    // 3. Prevent re-creation of handlers with useCallback
+    const handleStatusChange = useCallback(async (newStatus) => {
         const tid = toast.loading('Syncing status...');
         try {
             await apiClient.put(`/projects/${id}`, { status: newStatus });
             toast.success('Site status updated!', { id: tid });
+            clearCache(); // Invalidate cache since we mutated data
             fetchProject(id);
         } catch { toast.error('Status sync failed.', { id: tid }); }
-    };
+    }, [id, fetchProject, clearCache]);
 
-    const handleDelete = async () => {
+    const handleDelete = useCallback(async () => {
         if (!window.confirm('IRREVERSIBLE: Decommission this site?')) return;
         const tid = toast.loading('Decommissioning...');
         try {
@@ -53,9 +61,9 @@ const ProjectDetail = () => {
             toast.success('Site decommissioned.', { id: tid });
             navigate('/projects');
         } catch { toast.error('Command failed.'); }
-    };
+    }, [id, navigate]);
 
-    const handleEditSave = async (e) => {
+    const handleEditSave = useCallback(async (e) => {
         e.preventDefault();
         const data = Object.fromEntries(new FormData(e.target));
         const tid = toast.loading('Saving changes...');
@@ -63,17 +71,19 @@ const ProjectDetail = () => {
             await apiClient.put(`/projects/${id}`, data);
             toast.success('Parameters recalibrated!', { id: tid });
             setIsEditModalOpen(false);
+            clearCache(); // Invalidate cache
             fetchProject(id);
         } catch { toast.error('Update failed.'); }
-    };
+    }, [id, fetchProject, clearCache]);
 
-    const tabs = [
+    // 4. Memoize tabs configuration
+    const tabs = useMemo(() => [
         { id: 'workers', label: 'Worker List', icon: <HardHat size={18} /> },
         { id: 'expenses', label: 'Daily Expenses', icon: <CreditCard size={18} /> },
         { id: 'tenders', label: 'Tenders Related', icon: <FileText size={18} /> },
         { id: 'accounts', label: 'Account Summary', icon: <PieChartIcon size={18} /> },
         { id: 'documents', label: 'Vault', icon: <Paperclip size={18} /> },
-    ];
+    ], []);
 
     return (
         <>
@@ -169,7 +179,9 @@ const ProjectDetail = () => {
                         </div>
 
                         {/* Overall Progress Section */}
-                        <BudgetProgress spent={project.spent || 0} total={project.tenderRef || 1000000} progress={project.progress || 0} />
+                        <Suspense fallback={<div className="h-[20px] bg-secondary-100 animate-pulse rounded-full my-4" />}>
+                            <BudgetProgress spent={project.spent || 0} total={project.tenderRef || 1000000} progress={project.progress || 0} />
+                        </Suspense>
 
                         {/* Custom Tabs */}
                         <div className="flex flex-col gap-8">
@@ -198,73 +210,76 @@ const ProjectDetail = () => {
 
                             {/* Tab Content Rendering */}
                             <div className="mt-2 min-h-[500px]">
-                                {activeTab === 'workers' && <WorkerList projectId={id} />}
-                                {activeTab === 'expenses' && <DailyExpenseLog projectId={id} />}
-                                {activeTab === 'tenders' && (
-                                   <div className="glass rounded-3xl p-10 flex flex-col gap-8 min-h-[400px]">
-                                        <div className="flex justify-between items-center">
-                                            <h3 className="text-xl font-bold text-secondary-900 flex items-center gap-2"><FileText /> Linked Tenders</h3>
-                                            <button onClick={() => navigate('/tenders')} className="text-[10px] font-black uppercase text-primary-600 hover:underline">Link New +</button>
-                                        </div>
-                                        {project.tenders?.length > 0 ? (
-                                            <div className="grid gap-4">
-                                                {project.tenders.map(t => (
-                                                    <div key={t.id} className="p-4 bg-secondary-50 border border-secondary-100 rounded-2xl flex justify-between items-center">
-                                                        <div>
-                                                            <p className="font-bold">{t.title}</p>
-                                                            <p className="text-xs text-secondary-400">VALUE: ₹{t.tenderValue.toLocaleString()}</p>
+                                {/* 5. Suspense boundary for tab content */}
+                                <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary-500" /></div>}>
+                                    {activeTab === 'workers' && <WorkerList projectId={id} />}
+                                    {activeTab === 'expenses' && <DailyExpenseLog projectId={id} />}
+                                    {activeTab === 'tenders' && (
+                                       <div className="glass rounded-3xl p-10 flex flex-col gap-8 min-h-[400px]">
+                                            <div className="flex justify-between items-center">
+                                                <h3 className="text-xl font-bold text-secondary-900 flex items-center gap-2"><FileText /> Linked Tenders</h3>
+                                                <button onClick={() => navigate('/tenders')} className="text-[10px] font-black uppercase text-primary-600 hover:underline">Link New +</button>
+                                            </div>
+                                            {project.tenders?.length > 0 ? (
+                                                <div className="grid gap-4">
+                                                    {project.tenders.map(t => (
+                                                        <div key={t.id} className="p-4 bg-secondary-50 border border-secondary-100 rounded-2xl flex justify-between items-center">
+                                                            <div>
+                                                                <p className="font-bold">{t.title}</p>
+                                                                <p className="text-xs text-secondary-400">VALUE: ₹{t.tenderValue.toLocaleString()}</p>
+                                                            </div>
+                                                            <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-[10px] font-black uppercase">{t.status}</span>
                                                         </div>
-                                                        <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-[10px] font-black uppercase">{t.status}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
-                                                <FileText size={48} className="mb-4" />
-                                                <p className="font-bold">No tenders linked to this site yet.</p>
-                                            </div>
-                                        )}
-                                   </div>
-                                )}
-                                {activeTab === 'accounts' && (
-                                    <div className="glass rounded-3xl p-10 flex flex-col gap-8 min-h-[400px]">
-                                        <div className="flex justify-between items-center">
-                                            <h3 className="text-xl font-bold text-secondary-900 flex items-center gap-2"><PieChartIcon /> Account Performance</h3>
-                                            <button onClick={() => navigate('/accounts')} className="text-[10px] font-black uppercase text-primary-600 hover:underline">Full Ledger</button>
-                                        </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                                                <div className="h-[250px] relative">
-                                                    <ResponsiveContainer width="100%" height="100%">
-                                                        <PieChart>
-                                                            <Pie data={[
-                                                                { name: 'Spent', value: project.spent || 0, color: '#f43f5e' },
-                                                                { name: 'Remaining', value: Math.max(0, (project.tenderRef || 1000000) - (project.spent || 0)), color: '#10b981' }
-                                                            ]} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                                                                <Cell fill="#f43f5e" />
-                                                                <Cell fill="#10b981" />
-                                                            </Pie>
-                                                            <Tooltip />
-                                                        </PieChart>
-                                                    </ResponsiveContainer>
-                                                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                                        <p className="text-[10px] font-black uppercase text-secondary-400">Utilization</p>
-                                                        <p className="text-xl font-black">{Math.round(((project.spent || 0) / (project.tenderRef || 1000000)) * 100)}%</p>
-                                                    </div>
+                                                    ))}
                                                 </div>
-                                                <div className="space-y-4">
-                                                    <div className="p-6 bg-secondary-900 text-white rounded-[2rem]">
-                                                        <p className="text-[10px] font-black uppercase tracking-widest text-primary-400 mb-1">Financial Runway</p>
-                                                        <p className="text-3xl font-black">₹{((project.tenderRef || 1000000) - (project.spent || 0)).toLocaleString()}</p>
-                                                    </div>
-                                                    <div className="p-6 bg-white border border-secondary-100 rounded-[2rem]">
-                                                        <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400 mb-1">Total Burn</p>
-                                                        <p className="text-3xl font-black text-secondary-900">₹{(project.spent || 0).toLocaleString()}</p>
-                                                    </div>
+                                            ) : (
+                                                <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
+                                                    <FileText size={48} className="mb-4" />
+                                                    <p className="font-bold">No tenders linked to this site yet.</p>
                                                 </div>
+                                            )}
+                                       </div>
+                                    )}
+                                    {activeTab === 'accounts' && (
+                                        <div className="glass rounded-3xl p-10 flex flex-col gap-8 min-h-[400px]">
+                                            <div className="flex justify-between items-center">
+                                                <h3 className="text-xl font-bold text-secondary-900 flex items-center gap-2"><PieChartIcon /> Account Performance</h3>
+                                                <button onClick={() => navigate('/accounts')} className="text-[10px] font-black uppercase text-primary-600 hover:underline">Full Ledger</button>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                                                    <div className="h-[250px] relative">
+                                                        <ResponsiveContainer width="100%" height="100%">
+                                                            <PieChart>
+                                                                <Pie data={[
+                                                                    { name: 'Spent', value: project.spent || 0, color: '#f43f5e' },
+                                                                    { name: 'Remaining', value: Math.max(0, (project.tenderRef || 1000000) - (project.spent || 0)), color: '#10b981' }
+                                                                ]} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                                                                    <Cell fill="#f43f5e" />
+                                                                    <Cell fill="#10b981" />
+                                                                </Pie>
+                                                                <Tooltip />
+                                                            </PieChart>
+                                                        </ResponsiveContainer>
+                                                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                                            <p className="text-[10px] font-black uppercase text-secondary-400">Utilization</p>
+                                                            <p className="text-xl font-black">{Math.round(((project.spent || 0) / (project.tenderRef || 1000000)) * 100)}%</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-4">
+                                                        <div className="p-6 bg-secondary-900 text-white rounded-[2rem]">
+                                                            <p className="text-[10px] font-black uppercase tracking-widest text-primary-400 mb-1">Financial Runway</p>
+                                                            <p className="text-3xl font-black">₹{((project.tenderRef || 1000000) - (project.spent || 0)).toLocaleString()}</p>
+                                                        </div>
+                                                        <div className="p-6 bg-white border border-secondary-100 rounded-[2rem]">
+                                                            <p className="text-[10px] font-black uppercase tracking-widest text-secondary-400 mb-1">Total Burn</p>
+                                                            <p className="text-3xl font-black text-secondary-900">₹{(project.spent || 0).toLocaleString()}</p>
+                                                        </div>
+                                                    </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                 )}
-                                {activeTab === 'documents' && <DocumentManager projectId={id} />}
+                                     )}
+                                    {activeTab === 'documents' && <DocumentManager projectId={id} />}
+                                </Suspense>
                             </div>
                         </div>
                     </motion.div>
